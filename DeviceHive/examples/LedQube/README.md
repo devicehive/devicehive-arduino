@@ -20,7 +20,7 @@ gateway. It also translates [REST protocol](http://www.devicehive.com/restful)
 to the [binary protocol](http://www.devicehive.com/binary).
 
 iPhone/iPad application allows user to pick up a custom color and fill
-the whole or a part of [Rainbow Cube]. Moreover it’s possible to **TBD**.
+the whole or a part of [Rainbow Cube].
 
 The control flow is simple: User selects a color. iPhone application sends
 a command to the [DeviceHive] server. [Raspberry Pi] grabs that command from
@@ -39,9 +39,9 @@ the same connection wireless using pair of XBee modules.
 LedQube example uses [binary protocol](http://www.devicehive.com/binary) to
 communicate with the [Raspebrry Pi] gateway. We support the following commands:
 
-- "fill" to fill the whole Cube with one color
-- "cube" to fill the whole Cube with individual color
-- "pixels" to set colors of multiple pixels at once
+- "fill" to fill the whole Cube with one color (the same color for all LEDs)
+- "cube" to fill the whole Cube with individual colors (different colors for each LEDs)
+- "pixels" to set colors of several LEDs at once
 
 To build firmware you have to provide two additional dependencies:
 
@@ -55,8 +55,8 @@ Now you can build LedQube example and flash the [Rainbowduino] board.
 LedQube firmware explained
 --------------------------
 
-LedQube device firmware listens for commands from gateway, handles them and
-sends results back. Let's take a look at LedQube example in more detail...
+LedQube device firmware listens for commands from gateway,
+handles them and sends results back.
 
 
 ### Device registration
@@ -120,7 +120,7 @@ void loop(void)
 ~~~
 
 The code snipped above tries to read message from serial. Once message has been
-received, we checks incoming message intent and do some actions. In this code
+received, we check incoming message intent and do some actions. In this code
 snippet we send registration data back in response to registration request
 which is sent by the gateway periodically.
 
@@ -272,12 +272,12 @@ DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
 
 The code is pretty obvious: we read number of pixels provided
 and then read each coordinates and color components for each pixel
-individually. Note, there is no range checks for coordinates to
+individually. Note, there are no range checks for coordinates to
 simplify the code.
 
 
 Conclusion
 ----------
 
-This example showed how to control your [Rainbow Cube] over Internet using
-DeviceHive framework. See also the iPhone/iPad part of this example.
+This example demonstrated how to control your [Rainbow Cube] over Internet
+using DeviceHive framework. See also the iPhone/iPad part of this example.
