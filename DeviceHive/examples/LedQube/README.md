@@ -111,7 +111,7 @@ void loop(void)
                 DH.writeRegistrationResponse(REG_DATA);
                 break;
 
-            // ... // process other messages
+            ... // process other messages
         }
 
         rx_msg.reset(); // reset for the next message parsing
