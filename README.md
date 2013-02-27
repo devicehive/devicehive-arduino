@@ -11,14 +11,14 @@ Installation
 Installation of DeviceHive Arduino library is quite simple. Just download
 library archive [here](http://www.devicehive.com/ARDUINO_LIBRARY.zip) and
 unpack it to the `libraries` folder of your Arduino installation path.
-More details could be found at [Arduino](http://arduino.cc/en/Guide/Libraries) page.
+More details could be found at corresponding [Arduino](http://arduino.cc/en/Guide/Libraries) page.
 
 
 Quick start
 -----------
 
 Once DeviceHive Arduino library is installed you can use it. Just include it
-into your sketch, do not forget to initialize DeviceHive engine with
+into your sketch and do not forget to initialize DeviceHive engine with
 appropriate serial port:
 
 ~~~{.cpp}
@@ -35,7 +35,7 @@ void setup()
 The second step is to listen for incomming messages and process them:
 
 ~~~{.cpp}
-InputMessage rx_msg; // received message
+InputMessage rx_msg;
 void loop()
 {
     if (DH.read(rx_msg) == DH_PARSE_OK)
@@ -55,18 +55,18 @@ DeviceHive Engine
 -----------------
 
 DeviceHive engine is connected to a serial port and converts messages into/from
-stream of bytes: on the one hand it converts messages to the series of bytes and
-writes them to the serial port, on the other hand it receives series of bytes
+stream of bytes. On the one hand it converts messages to the series of bytes and
+writes them to the serial port. On the other hand it receives series of bytes
 from the serial port and tries to parse messages.
 
 
 ### Initialization
 
 It's important to initialize DeviceHive engine with an appropriate serial port.
-A good place to do that is `setup()` function. Usually, the `Serial` serial
+A good place to do that is the `setup()` function. Usually, the `Serial` serial
 port is used, but some boards (such as Arduino Mega) also have additional
 [serial ports](http://arduino.cc/en/Reference/Serial):
-Serial1, Serial2 and Serial3. You can use any of them.
+`Serial1`, `Serial2` and `Serial3`. You can use any of them.
 
 ~~~{.cpp}
 Serial.begin(9600);
@@ -77,7 +77,7 @@ DH.begin(Serial);
 ### Sending messages
 
 To send message one of `DH.write()` methods should be used. But before you have
-to prepare message. The OutputMessage provides interface for message formatting.
+to prepare message. The `OutputMessage` provides interface for message formatting.
 The following example shows how to send command result which contains command
 identifier, status and result.
 
@@ -129,7 +129,7 @@ Other possible return values are usually errors:
 
 
 It's possible to provide a timeout for receiving message. If time interval from
-the begin of message is great than timeout then the message will be dropped.
+the begin of message is great than timeout value then the message will be dropped.
 The following code sets the 2 seconds receiving timeout:
 
 ~~~{.cpp}
@@ -144,8 +144,8 @@ Messages
 --------
 
 A message has intent number which identifies message purpose and a custom
-payload which depends on the message type. The maximum message payload size is
-statically defined by the `MAX_MSG_SIZE` constant which is `256` by default.
+payload which depends on the message intent. The maximum message payload size
+is statically defined by the `MAX_MSG_SIZE` constant which is 256 by default.
 That means that library is unable to process messages with payload size more
 than 256 bytes although DeviceHive binary protocol allows messages up to 64K.
 
@@ -172,7 +172,7 @@ The `InputMessage` provides a set of methods to parse message payload:
   - `getUInt16()` and `getInt16()` methods are used to read a 16-bits integer in little-endian format.
   - `getUInt8()` and `getInt8()` methods are used to read a 8-bits integer.
 
-The `reset()` method is used to reset reading poisition to the begin
+The `reset()` method is used to reset reading position to the begin
 of message payload. This may be important because usually there is only
 one global `rx_msg` variable which is used to process all incoming messages.
-So we have to rewind reading poisition after message's processed.
+So we have to rewind reading poisition after message has been processed.
