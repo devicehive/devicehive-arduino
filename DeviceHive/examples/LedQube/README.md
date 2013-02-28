@@ -234,7 +234,7 @@ and apply it.
 This command should be used to change a few pixels of the LedQube device
 but not all off them (for that purpose use "cube" command). Please note,
 because message payload length is limited to the 256 bytes in DeviceHive
-arduino library (see MAX_MSG_SIZE constant) we cannot send more that
+arduino library (see `MAX_MSG_SIZE` constant) we cannot send more that
 41 pixels at once (which is more than half of LEDs in our case).
 
 The message intent for this command is 258. An array of Pixel structures
