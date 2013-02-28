@@ -24,19 +24,19 @@ the whole or a part of [Rainbow Cube].
 
 The control flow is simple: User selects a color. iPhone application sends
 a command to the [DeviceHive] server. [Raspberry Pi] grabs that command from
-the [DeviceHive] server and sends it to the LedQube device.
+the [DeviceHive] server and sends it to the LedCube device.
 
 
-LedQube device
+LedCube device
 --------------
 
-The LedQube device is a [Rainbow Cube] and a [Rainbowduino] flashed
-with LedQube example firmware. The LedQube device is connected to
-the [Raspberry Pi] via a serial port cable. If we use USB cable, the LedQube
+The LedCube device is a [Rainbow Cube] and a [Rainbowduino] flashed
+with LedCube example firmware. The LedCube device is connected to
+the [Raspberry Pi] via a serial port cable. If we use USB cable, the LedCube
 device will be available as `/dev/ttyUSB0`. Also it's possible to make
 the same connection wireless using pair of XBee modules.
 
-LedQube example uses [binary protocol](http://www.devicehive.com/binary) to
+LedCube example uses [binary protocol](http://www.devicehive.com/binary) to
 communicate with the [Raspebrry Pi] gateway. We support the following commands:
 
 - "fill" to fill the whole Cube with one color (the same color for all LEDs)
@@ -49,13 +49,13 @@ To build firmware you have to provide two additional dependencies:
 - [DeviceHive Arduino library](http://www.devicehive.com/ARDUINO_LIBRARY.zip)
 
 Please unpack these dependencies into the Arduino’s `libraries` path.
-Now you can build LedQube example and flash the [Rainbowduino] board.
+Now you can build LedCube example and flash the [Rainbowduino] board.
 
 
-LedQube firmware explained
+LedCube firmware explained
 --------------------------
 
-LedQube device firmware listens for commands from gateway,
+LedCube device firmware listens for commands from gateway,
 handles them and sends results back.
 
 
@@ -65,15 +65,15 @@ Each device should send a registration data at startup (or reset) and as
 a response to registration request message. We use JSON format:
 
 ~~~{.cpp}
-// LedQube device registration data
+// LedCube device registration data
 const char *REG_DATA = "{"
     "id:\"b125698d-61bd-40d7-b65e-e1f86852a166\","
-    "key:\"LED_qube\","
-    "name:\"LED Qube\","
+    "key:\"LED_cube\","
+    "name:\"LED Cube\","
     "deviceClass:{"
-        "name:\"LED_qube\","
+        "name:\"LED_cube\","
         "version:\"1.0\"},"
-    "equipment:[{code:\"qube\",name:\"qube\",type:\"LED_Qube\"}],"
+    "equipment:[{code:\"cube\",name:\"cube\",type:\"LED_Cube\"}],"
     "commands:["
         "{intent:256,name:\"fill\",params:{R:u8,G:u8,B:u8}}"
         "{intent:257,name:\"cube\",params:[{R:u8,G:u8,B:u8}]}"
@@ -84,12 +84,12 @@ const char *REG_DATA = "{"
 ~~~
 
 All parameters are quite obvious: device identifier, key, name, device class
-and equipment list. Since LedQube device is passive, i.e. doesn't have any
+and equipment list. Since LedCube device is passive, i.e. doesn't have any
 sensors or buttons, there is no any notifications supported. But we support
 a few commands to control LEDs color.
 
 Note, you have to provide an unique (in namespace of playground) device
-identifier for each your LedQube device. Device identifier is a simple GUID
+identifier for each your LedCube device. Device identifier is a simple GUID
 written in lower case.
 
 We send registration data using `DH.writeRegistrationResponse()` method.
@@ -171,7 +171,7 @@ First of all we read command identifier which will be used to report result
 back to DeviceHive server. Then we read RGB components of color provided and
 it's all we need to process this command.
 
-Now we are able to apply received color for each LED in the LedQube device.
+Now we are able to apply received color for each LED in the LedCube device.
 Once the job's done we send "OK" result back to gateway, and gateway will
 send it to the DeviceHive server.
 
@@ -196,7 +196,7 @@ Corresponding DeviceHive command (defined by the REST protocol) should look like
 ~~~
 
 The number of colors provided should be exactly the same as the number of LEDs
-on the LedQube device. In our case this number is `4*4*4=64`.
+on the LedCube device. In our case this number is `4*4*4=64`.
 
 The code snippet below shows example of processing "cube" command in binary format:
 
@@ -231,7 +231,7 @@ and apply it.
 
 #### "pixels" command
 
-This command should be used to change a few pixels of the LedQube device
+This command should be used to change a few pixels of the LedCube device
 but not all off them (for that purpose use "cube" command). Please note,
 because message payload length is limited to the 256 bytes in DeviceHive
 arduino library (see `MAX_MSG_SIZE` constant) we cannot send more that

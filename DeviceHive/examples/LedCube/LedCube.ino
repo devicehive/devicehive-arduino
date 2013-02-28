@@ -5,15 +5,15 @@
 #define CMD_STATUS_FAILED       "Failed"
 #define CMD_RESULT_OK           "OK"
 
-// LedQube device registration data
+// LedCube device registration data
 const char *REG_DATA = "{"
     "id:\"b125698d-61bd-40d7-b65e-e1f86852a166\","
-    "key:\"LED_qube\","
-    "name:\"LED Qube\","
+    "key:\"LED_Cube\","
+    "name:\"LED Cube\","
     "deviceClass:{"
-        "name:\"LED_qube\","
+        "name:\"LED_cube\","
         "version:\"1.0\"},"
-    "equipment:[{code:\"qube\",name:\"qube\",type:\"LED_Qube\"}],"
+    "equipment:[{code:\"cube\",name:\"cube\",type:\"LED_Cube\"}],"
     "commands:["
         "{intent:256,name:\"fill\",params:{R:u8,G:u8,B:u8}},"
         "{intent:257,name:\"cube\",params:[{R:u8,G:u8,B:u8}]},"
@@ -43,7 +43,7 @@ struct Pixel        // point + color
     Color color;
 };
 
-enum QubeSize       // Qube dimension
+enum CubeSize       // Cube dimension
 {
     NX = 4,
     NY = 4,
@@ -86,7 +86,7 @@ void loop(void)
                 break;
 
 
-            case 256:   // "fill" - fill the whole Qube with one color
+            case 256:   // "fill" - fill the whole Cube with one color
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
                 Color color; rx_msg.get(&color, sizeof(color));
@@ -103,7 +103,7 @@ void loop(void)
             } break;
 
 
-            case 257:   // "cube" - fill the whole Qube with individual color for each pixel
+            case 257:   // "cube" - fill the whole Cube with individual color for each pixel
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
                 const uint16_t count = rx_msg.getUInt16();
