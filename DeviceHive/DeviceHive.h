@@ -41,6 +41,7 @@ public:
 public:
     void put(const void *buf, unsigned int len);
 
+    void putString(const char *str, unsigned int len);
     void putString(const char *str);
     void putUInt32(uint32_t val);
     void putUInt16(uint16_t val);

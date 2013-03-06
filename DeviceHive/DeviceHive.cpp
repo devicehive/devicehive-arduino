@@ -36,16 +36,21 @@ void OutputMessage::put(const void *buf, unsigned int len)
 }
 
 
-// put NULL-terminated string
-void OutputMessage::putString(const char *str)
+// put custom string
+void OutputMessage::putString(const char *str, unsigned int len)
 {
-    const uint16_t len = strlen(str);
     if (length+sizeof(len)+len <= MAX_MSG_SIZE)
     {
         putUInt16(len);
         put(str, len);
     }
     // else: error NO MORE SPACE
+}
+
+// put NULL-terminated string
+void OutputMessage::putString(const char *str)
+{
+    putString(str, strlen(str));
 }
 
 
