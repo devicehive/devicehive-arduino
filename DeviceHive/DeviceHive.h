@@ -135,6 +135,8 @@ private:
     unsigned int writeHeader(uint16_t intent, uint16_t length);
     unsigned int writePayload(const uint8_t *buf, unsigned int len);
     unsigned int writeString(const char *str, unsigned int len);
+    unsigned int writeUInt32(uint32_t val);
+    unsigned int writeUInt16(uint16_t val);
     void writeChecksum(unsigned int checksum);
 
 private:

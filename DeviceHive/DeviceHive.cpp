@@ -423,15 +423,13 @@ void DeviceHive::write(const Message &msg)
 // write registration response (JSON format)
 void DeviceHive::writeRegistrationResponse(const char *data)
 {
-    //OutputMessage msg(INTENT_REGISTRATION_RESPONSE_JSON);
-    //msg.putString(data);
-    //write(msg);
-
     if (!stream)
         return;
 
     const unsigned int data_len = strlen(data);
-    unsigned int checksum = writeHeader(INTENT_REGISTRATION_RESPONSE_JSON, sizeof(uint16_t) + data_len);
+    unsigned int checksum = writeHeader(
+        INTENT_REGISTRATION_RESPONSE_JSON,
+        sizeof(uint16_t) + data_len);
     checksum += writeString(data, data_len);
     writeChecksum(checksum);
 }
@@ -440,11 +438,19 @@ void DeviceHive::writeRegistrationResponse(const char *data)
 // write command result
 void DeviceHive::writeCommandResult(uint32_t cmd_id, const char *status, const char *result)
 {
-    OutputMessage msg(INTENT_COMMAND_RESULT);
-    msg.putUInt32(cmd_id);
-    msg.putString(status);
-    msg.putString(result);
-    write(msg);
+    if (!stream)
+        return;
+
+    const unsigned int status_len = strlen(status);
+    const unsigned int result_len = strlen(result);
+    unsigned int checksum = writeHeader(
+        INTENT_COMMAND_RESULT, sizeof(uint32_t)
+        + sizeof(uint16_t) + status_len
+        + sizeof(uint16_t) + result_len);
+    checksum += writeUInt32(cmd_id);
+    checksum += writeString(status, status_len);
+    checksum += writeString(result, result_len);
+    writeChecksum(checksum);
 }
 
 
@@ -459,23 +465,8 @@ unsigned int DeviceHive::writeHeader(uint16_t intent, uint16_t length)
     unsigned int checksum = DH_SIGNATURE1
         + DH_SIGNATURE2 + DH_VERSION + 0x00;
 
-    { // length, little endian
-        const unsigned int a = (length     ) & 0xFF;
-        const unsigned int b = (length >> 8) & 0xFF;
-
-        stream->write(a);
-        stream->write(b);
-        checksum += (a + b);
-    }
-
-    { // intent, little endian
-        const unsigned int a = (intent     ) & 0xFF;
-        const unsigned int b = (intent >> 8) & 0xFF;
-
-        stream->write(a);
-        stream->write(b);
-        checksum += (a + b);
-    }
+    checksum += writeUInt16(length);
+    checksum += writeUInt16(intent);
 
     return checksum;
 }
@@ -500,25 +491,39 @@ unsigned int DeviceHive::writePayload(const uint8_t *buf, unsigned int len)
 // write custom string, return payload checksum
 unsigned int DeviceHive::writeString(const char *str, unsigned int len)
 {
-    unsigned int checksum = 0;
-
-    { // length, little endian
-        const unsigned int a = (len     ) & 0xFF;
-        const unsigned int b = (len >> 8) & 0xFF;
-
-        stream->write(a);
-        stream->write(b);
-        checksum += (a + b);
-    }
-
-    if (0 < len)
-    {
-        stream->write((const uint8_t*)str, len);
-        for (unsigned int i = 0; i < len; ++i)
-            checksum += (uint8_t)str[i];
-    }
-
+    unsigned int checksum = writeUInt16(len);
+    checksum += writePayload((const uint8_t*)str, len);
     return checksum;
+}
+
+
+// write 32-bits integer, return payload checksum
+unsigned int DeviceHive::writeUInt32(uint32_t val)
+{
+    const unsigned int a = (val   ) & 0xFF;
+    const unsigned int b = (val>>8) & 0xFF;
+    const unsigned int c = (val>>16) & 0xFF;
+    const unsigned int d = (val>>24) & 0xFF;
+
+    stream->write(a);
+    stream->write(b);
+    stream->write(c);
+    stream->write(d);
+
+    return a + b + c + d;
+}
+
+
+// write 16-bits integer, return payload checksum
+unsigned int DeviceHive::writeUInt16(uint16_t val)
+{
+    const unsigned int a = (val   ) & 0xFF;
+    const unsigned int b = (val>>8) & 0xFF;
+
+    stream->write(a);
+    stream->write(b);
+
+    return a + b;
 }
 
 
