@@ -69,7 +69,7 @@ void loop(void)
                 setLedState(state);
                 DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
 
-                sendButtonState(128);
+                sendButtonState(state);
             } break;
         }
 
