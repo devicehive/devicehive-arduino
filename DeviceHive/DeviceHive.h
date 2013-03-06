@@ -2,6 +2,7 @@
 #define __DEVICE_HIVE_H__
 
 #include <inttypes.h>
+#include "Arduino.h"
 #include "Stream.h"
 
 #if !defined(MAX_MSG_SIZE)
@@ -129,6 +130,12 @@ public:
     void writeRegistrationResponse(const char *data);
     void writeCommandResult(uint32_t cmd_id,
         const char *status, const char *result);
+
+private:
+    unsigned int writeHeader(uint16_t intent, uint16_t length);
+    unsigned int writePayload(const uint8_t *buf, unsigned int len);
+    unsigned int writeString(const char *str, unsigned int len);
+    void writeChecksum(unsigned int checksum);
 
 private:
     Stream *stream;             // Serial stream

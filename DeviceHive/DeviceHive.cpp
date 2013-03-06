@@ -1,5 +1,4 @@
 #include "DeviceHive.h"
-#include "Arduino.h"
 
 #include <stdlib.h>
 #include <memory.h>
@@ -415,51 +414,26 @@ void DeviceHive::write(const Message &msg)
     if (!stream)
         return;
 
-    stream->write(DH_SIGNATURE1);
-    stream->write(DH_SIGNATURE2);
-    stream->write(DH_VERSION);
-    stream->write((uint8_t)0x00);
-
-    unsigned int tx_checksum = DH_SIGNATURE1
-        + DH_SIGNATURE2 + DH_VERSION + 0x00;
-
-    { // length, little endian
-        const unsigned int a = (msg.length     ) & 0xFF;
-        const unsigned int b = (msg.length >> 8) & 0xFF;
-
-        stream->write(a);
-        stream->write(b);
-        tx_checksum += (a + b);
-    }
-
-    { // intent, little endian
-        const unsigned int a = (msg.intent     ) & 0xFF;
-        const unsigned int b = (msg.intent >> 8) & 0xFF;
-
-        stream->write(a);
-        stream->write(b);
-        tx_checksum += (a + b);
-    }
-
-    // message body
-    if (0 < msg.length)
-    {
-        stream->write(msg.buffer, msg.length);
-        for (unsigned int i = 0; i < msg.length; ++i)
-            tx_checksum += msg.buffer[i];
-    }
-
-    // checksum
-    stream->write(0xFF - (tx_checksum&0xFF));
+    unsigned int checksum = writeHeader(msg.intent, msg.length);
+    checksum += writePayload(msg.buffer, msg.length);
+    writeChecksum(checksum);
 }
 
 
 // write registration response (JSON format)
 void DeviceHive::writeRegistrationResponse(const char *data)
 {
-    OutputMessage msg(INTENT_REGISTRATION_RESPONSE_JSON);
-    msg.putString(data);
-    write(msg);
+    //OutputMessage msg(INTENT_REGISTRATION_RESPONSE_JSON);
+    //msg.putString(data);
+    //write(msg);
+
+    if (!stream)
+        return;
+
+    const unsigned int data_len = strlen(data);
+    unsigned int checksum = writeHeader(INTENT_REGISTRATION_RESPONSE_JSON, sizeof(uint16_t) + data_len);
+    checksum += writeString(data, data_len);
+    writeChecksum(checksum);
 }
 
 
@@ -471,6 +445,87 @@ void DeviceHive::writeCommandResult(uint32_t cmd_id, const char *status, const c
     msg.putString(status);
     msg.putString(result);
     write(msg);
+}
+
+
+// write message header, return header checksum
+unsigned int DeviceHive::writeHeader(uint16_t intent, uint16_t length)
+{
+    stream->write(DH_SIGNATURE1);
+    stream->write(DH_SIGNATURE2);
+    stream->write(DH_VERSION);
+    stream->write((uint8_t)0x00);
+
+    unsigned int checksum = DH_SIGNATURE1
+        + DH_SIGNATURE2 + DH_VERSION + 0x00;
+
+    { // length, little endian
+        const unsigned int a = (length     ) & 0xFF;
+        const unsigned int b = (length >> 8) & 0xFF;
+
+        stream->write(a);
+        stream->write(b);
+        checksum += (a + b);
+    }
+
+    { // intent, little endian
+        const unsigned int a = (intent     ) & 0xFF;
+        const unsigned int b = (intent >> 8) & 0xFF;
+
+        stream->write(a);
+        stream->write(b);
+        checksum += (a + b);
+    }
+
+    return checksum;
+}
+
+
+// write message payload, return payload checksum
+unsigned int DeviceHive::writePayload(const uint8_t *buf, unsigned int len)
+{
+    unsigned int checksum = 0;
+
+    if (0 < len)
+    {
+        stream->write(buf, len);
+        for (unsigned int i = 0; i < len; ++i)
+            checksum += buf[i];
+    }
+
+    return checksum;
+}
+
+
+// write custom string, return payload checksum
+unsigned int DeviceHive::writeString(const char *str, unsigned int len)
+{
+    unsigned int checksum = 0;
+
+    { // length, little endian
+        const unsigned int a = (len     ) & 0xFF;
+        const unsigned int b = (len >> 8) & 0xFF;
+
+        stream->write(a);
+        stream->write(b);
+        checksum += (a + b);
+    }
+
+    if (0 < len)
+    {
+        stream->write((const uint8_t*)str, len);
+        for (unsigned int i = 0; i < len; ++i)
+            checksum += (uint8_t)str[i];
+    }
+
+    return checksum;
+}
+
+
+// write checksum byte
+void DeviceHive::writeChecksum(unsigned int checksum)
+{
+    stream->write(0xFF - (checksum&0xFF));
 }
 
 
