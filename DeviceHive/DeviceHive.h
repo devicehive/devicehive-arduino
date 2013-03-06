@@ -48,6 +48,14 @@ public:
     void putInt32(int32_t val);
     void putInt16(int16_t val);
     void putInt8(int8_t val);
+
+    // Arduino friendly names
+    void putULong(unsigned long val) { putUInt32(val); }
+    void putUShort(unsigned short val) { putUInt16(val); }
+    void putByte(byte val) { putUInt8(val); }
+    void putLong(long val) { putInt32(val); }
+    void putShort(short val) { putInt16(val); }
+    void putChar(char val) { putUInt8(val); }
 };
 
 
@@ -70,6 +78,14 @@ public:
     int32_t getInt32();
     int16_t getInt16();
     int8_t getInt8();
+
+    // Arduino friendly names
+    unsigned long getULong() { return getUInt32(); }
+    unsigned short getUShort() { return getUInt16(); }
+    byte getByte() { return getUInt8(); }
+    long getLong() { return getInt32(); }
+    short getShort() { return getInt16(); }
+    char getChar() { return getInt8(); }
 
 private:
     uint16_t read_pos;      // current "read" position
