@@ -12,21 +12,28 @@ const char *REG_DATA = "{"
     "deviceClass:{"
         "name:\"Arduino_LED\","
         "version:\"1.0\"},"
-    "equipment:[{code:\"led\",name:\"led\",type:\"led\"}],"
+    "equipment:[],"
     "commands:["
         "{intent:256,name:\"set\",params:u8}"
     "],"
     "notifications:["
-        "{intent:257,name:\"button\",params:u8}"    
+        "{intent:257,name:\"button\",params:u8}"
     "]"
 "}";
 
 InputMessage rx_msg; // received message
-int ledPin = 13;
+const int LED_PIN = 13;
 
-void setLed(byte state)
+void setLedState(int state)
 {
-  digitalWrite(ledPin, state ? HIGH : LOW);  
+    digitalWrite(LED_PIN, state ? HIGH : LOW);
+}
+
+void sendButtonState(int state)
+{
+    OutputMessage tx_msg(257);
+    tx_msg.putUInt8(state);
+    DH.write(tx_msg);
 }
 
 /**
@@ -54,21 +61,18 @@ void loop(void)
                 break;
 
 
-            case 256:   
+            case 256:
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
-                uint8_t state = rx_msg.getUInt8();
-                
-                setLed(state);
+                const uint8_t state = rx_msg.getUInt8();
 
+                setLedState(state);
                 DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-                
-                OutputMessage tx_msg(257);
-                tx_msg.putUInt8(128);
-                DH.write(tx_msg);
+
+                sendButtonState(128);
             } break;
         }
-        
+
         rx_msg.reset(); // reset for the next message parsing
     }
 }
