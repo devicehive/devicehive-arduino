@@ -20,13 +20,13 @@ Message::Message(uint8_t *buf, uint16_t buf_size, uint16_t msg_intent)
 
 
 // main constructor
-OutputMessage::OutputMessage(uint16_t intent)
-    : Message(static_buffer, sizeof(static_buffer), intent)
+OutputMessageEx::OutputMessageEx(uint8_t *buf, uint16_t buf_size, uint16_t msg_intent)
+    : Message(buf, buf_size, msg_intent)
 {}
 
 
 // put custom binary data
-void OutputMessage::put(const void *buf, unsigned int len)
+void OutputMessageEx::put(const void *buf, unsigned int len)
 {
     if (length+len <= buffer_size)
     {
@@ -38,7 +38,7 @@ void OutputMessage::put(const void *buf, unsigned int len)
 
 
 // put custom string
-void OutputMessage::putString(const char *str, unsigned int len)
+void OutputMessageEx::putString(const char *str, unsigned int len)
 {
     if (length+sizeof(uint16_t)+len <= buffer_size)
     {
@@ -48,15 +48,16 @@ void OutputMessage::putString(const char *str, unsigned int len)
     // else: error NO MORE SPACE
 }
 
+
 // put NULL-terminated string
-void OutputMessage::putString(const char *str)
+void OutputMessageEx::putString(const char *str)
 {
     putString(str, strlen(str));
 }
 
 
 // put unsigned 32-bits integer (little-endian)
-void OutputMessage::putUInt32(uint32_t val)
+void OutputMessageEx::putUInt32(uint32_t val)
 {
     if (length+sizeof(val) <= buffer_size)
     {
@@ -70,7 +71,7 @@ void OutputMessage::putUInt32(uint32_t val)
 
 
 // put unsigned 16-bits integer (little-endian)
-void OutputMessage::putUInt16(uint16_t val)
+void OutputMessageEx::putUInt16(uint16_t val)
 {
     if (length+sizeof(val) <= buffer_size)
     {
@@ -82,7 +83,7 @@ void OutputMessage::putUInt16(uint16_t val)
 
 
 // put unsigned 8-bits integer
-void OutputMessage::putUInt8(uint8_t val)
+void OutputMessageEx::putUInt8(uint8_t val)
 {
     if (length+sizeof(val) <= buffer_size)
     {
@@ -93,22 +94,29 @@ void OutputMessage::putUInt8(uint8_t val)
 
 
 
-// default constructor
-InputMessage::InputMessage()
-    : Message(static_buffer, sizeof(static_buffer), 0)
+// main constructor
+OutputMessage::OutputMessage(uint16_t msg_intent)
+    : OutputMessageEx(static_buffer, sizeof(static_buffer), msg_intent)
+{}
+
+
+
+// main constructor
+InputMessageEx::InputMessageEx(uint8_t *buf, uint16_t buf_size)
+    : Message(buf, buf_size, 0)
     , read_pos(0)
 {}
 
 
 // reset the "read" position
-void InputMessage::reset()
+void InputMessageEx::reset()
 {
     read_pos = 0;
 }
 
 
 // skip data
-void InputMessage::skip(unsigned int len)
+void InputMessageEx::skip(unsigned int len)
 {
     if (read_pos+len <= length)
     {
@@ -119,7 +127,7 @@ void InputMessage::skip(unsigned int len)
 
 
 // get custom binary data
-void InputMessage::get(void *buf, unsigned int len)
+void InputMessageEx::get(void *buf, unsigned int len)
 {
     if (read_pos+len <= length)
     {
@@ -131,7 +139,7 @@ void InputMessage::get(void *buf, unsigned int len)
 
 
 // get NULL-terminated string, return string length, always NULL-terminated
-unsigned int InputMessage::getString(char *str, unsigned int max_len)
+unsigned int InputMessageEx::getString(char *str, unsigned int max_len)
 {
     if (read_pos+sizeof(uint16_t) <= length)
     {
@@ -163,7 +171,7 @@ unsigned int InputMessage::getString(char *str, unsigned int max_len)
 
 
 // get unsigned 32-bits integer (little-endian)
-uint32_t InputMessage::getUInt32()
+uint32_t InputMessageEx::getUInt32()
 {
     uint32_t val = 0;
 
@@ -181,7 +189,7 @@ uint32_t InputMessage::getUInt32()
 
 
 // get unsigned 16-bits integer (little-endian)
-uint16_t InputMessage::getUInt16()
+uint16_t InputMessageEx::getUInt16()
 {
     uint16_t val = 0;
 
@@ -197,7 +205,7 @@ uint16_t InputMessage::getUInt16()
 
 
 // get unsigned 8-bits integer
-uint8_t InputMessage::getUInt8()
+uint8_t InputMessageEx::getUInt8()
 {
     uint8_t val = 0;
 
@@ -209,6 +217,13 @@ uint8_t InputMessage::getUInt8()
 
     return val;
 }
+
+
+
+// default constructor
+InputMessage::InputMessage()
+    : InputMessageEx(static_buffer, sizeof(static_buffer))
+{}
 
 
 
@@ -258,7 +273,7 @@ void DeviceHive::end()
 // try to read message, return zero if message has been read!
 int DeviceHive::read(Message *msg)
 {
-    return msg ? read(*msg) : 0;
+    return msg ? read(*msg) : -1;
 }
 
 
@@ -341,7 +356,7 @@ int DeviceHive::read(Message &msg)
                 break;
 
             case STATE_PAYLOAD:
-                if (msg.length+1 <= msg.buffer_size)
+                if (msg.length < msg.buffer_size)
                     msg.buffer[msg.length++] = b;
                 if (--rx_msg_len == 0)
                     rx_state = STATE_CHECKSUM;

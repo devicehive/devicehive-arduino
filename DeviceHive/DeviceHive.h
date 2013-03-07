@@ -13,8 +13,9 @@
 class Message
 {
 public:
-    Message(uint8_t *buf, uint16_t buf_size,
-        uint16_t intent = 0);
+    Message(uint8_t *buf,
+        uint16_t buf_size,
+        uint16_t intent);
 
 public:
     uint16_t intent;                // message type identifier
@@ -34,12 +35,14 @@ enum Intent
 };
 
 
-// message + formatting
-class OutputMessage:
+// message + formatting, uses external buffer
+class OutputMessageEx:
     public Message
 {
 public:
-    explicit OutputMessage(uint16_t intent);
+    OutputMessageEx(uint8_t *buf,
+        uint16_t buf_size,
+        uint16_t intent);
 
 public:
     void put(const void *buf, unsigned int len);
@@ -53,25 +56,35 @@ public:
     void putInt16(int16_t val) { putUInt16(val); }
     void putInt8(int8_t val) { putUInt8(val); }
 
-    // Arduino friendly names
+public: // Arduino friendly names
     void putULong(unsigned long val) { putUInt32(val); }
     void putUShort(unsigned short val) { putUInt16(val); }
     void putByte(byte val) { putUInt8(val); }
     void putLong(long val) { putInt32(val); }
     void putShort(short val) { putInt16(val); }
     void putChar(char val) { putUInt8(val); }
+};
+
+
+// message + formatting, uses static buffer
+class OutputMessage:
+    public OutputMessageEx
+{
+public:
+    explicit OutputMessage(uint16_t intent = 0);
 
 private:
     uint8_t static_buffer[MAX_MSG_SIZE];
 };
 
 
-// message + parsing
-class InputMessage:
+// message + parsing, uses external buffer
+class InputMessageEx:
     public Message
 {
 public:
-    InputMessage();
+    InputMessageEx(uint8_t *buf,
+        uint16_t buf_size);
     void reset();
 
 public:
@@ -86,7 +99,7 @@ public:
     int16_t getInt16() { return getUInt16(); }
     int8_t getInt8() { return getUInt8(); }
 
-    // Arduino friendly names
+public: // Arduino friendly names
     unsigned long getULong() { return getUInt32(); }
     unsigned short getUShort() { return getUInt16(); }
     byte getByte() { return getUInt8(); }
@@ -95,8 +108,19 @@ public:
     char getChar() { return getInt8(); }
 
 private:
-    uint8_t static_buffer[MAX_MSG_SIZE];
     uint16_t read_pos;      // current "read" position
+};
+
+
+// message + parsing, uses static buffer
+class InputMessage:
+    public InputMessageEx
+{
+public:
+    InputMessage();
+
+private:
+    uint8_t static_buffer[MAX_MSG_SIZE];
 };
 
 
