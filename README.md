@@ -1,4 +1,4 @@
-DeviceHive library for Arduino
+﻿DeviceHive library for Arduino
 ==============================
 
 This is auxiliary library implementing [DeviceHive](http://www.devicehive.com/)
@@ -9,7 +9,7 @@ Installation
 ------------
 
 Installation of DeviceHive Arduino library is quite simple. Just download
-library archive [here](http://www.devicehive.com/ARDUINO_LIBRARY.zip) and
+library archive [here](http://www.devicehive.com/TODO_ARDUINO_LIBRARY.zip) and
 unpack it to the `libraries` folder of your Arduino installation path.
 More details could be found at corresponding [Arduino](http://arduino.cc/en/Guide/Libraries) page.
 
@@ -17,9 +17,9 @@ More details could be found at corresponding [Arduino](http://arduino.cc/en/Guid
 Quick start
 -----------
 
-Once DeviceHive Arduino library is installed you can use it. Just include it
+Once DeviceHive Arduino library is installed you can use it. Just include `DeviceHive.h`
 into your sketch and do not forget to initialize DeviceHive engine with
-appropriate serial port:
+an appropriate serial port:
 
 ~~~{.cpp}
 #include <DeviceHive.h>
@@ -128,7 +128,7 @@ Other possible return values are usually errors:
   - `DH_PARSE_NO_SERIAL` - DeviceHive engine is not initialized
 
 
-It's possible to provide a timeout for receiving message. If time interval from
+It's possible to provide a timeout for message receiving. If time interval from
 the begin of message is great than timeout value then the message will be dropped.
 The following code sets the 2 seconds receiving timeout:
 
@@ -136,8 +136,8 @@ The following code sets the 2 seconds receiving timeout:
 DH.setRxTimeout(2000);
 ~~~
 
-Receiving timeout is equal to 1 second by default. If this timeout is set
-to zero then no any timeout will be checked.
+Receiving timeout is equal to 1 second by default. But if timeout value is set
+to zero then no any timeouts will be checked.
 
 
 Messages
@@ -148,16 +148,21 @@ payload which depends on the message intent. The maximum message payload size
 is statically defined by the `MAX_MSG_SIZE` constant which is 256 by default.
 That means that library is unable to process messages with payload size more
 than 256 bytes although DeviceHive binary protocol allows messages up to 64K.
+See next section for advanced message usage.
 
 
 ### Formatting
 
 The `OutputMessage` provides a set of methods to format message payload:
   - `put(buf, len)` method is used to write custom byte sequence such as a custom structure.
-  - `putString(str)` method prepends string content with 2-bytes string length.
+  - `putString(str, len)` method prepends string content with 2-bytes string length.
+  - `putString(str)` method prepends NULL-terminated string content with 2-bytes string length.
   - `putUInt32(val)` and `putInt32(val)` methods are used to write a 32-bits integer in little-endian format.
+                     Also the following synonyms are avaialbe: `putULong(val)` and `putLong(val)`.
   - `putUInt16(val)` and `putInt16(val)` methods are used to write a 16-bits integer in little-endian format.
+                     Also the following synonyms are avaialbe: `putUShort(val)` and `putShort(val)`.
   - `putUInt8(val)` and `putInt8(val)` methods are used to write a 8-bits integer.
+                    Also the following synonyms are avaialbe: `putByte(val)` and `putChar(val)`.
 
 Each of these methods does nothing if there is no enough space in message payload.
 
@@ -169,10 +174,118 @@ The `InputMessage` provides a set of methods to parse message payload:
   - `get(buf, len)` method is used to read custom byte sequence such a custom structure.
   - `getString(str, max_len)` method reads string length and string content. Returned string is always NULL-terminated.
   - `getUInt32()` and `getInt32()` methods are used to read a 32-bits integer in little-endian format.
+                  Also the following synonyms are avaialbe: `getULong()` and `getLong()`.
   - `getUInt16()` and `getInt16()` methods are used to read a 16-bits integer in little-endian format.
+                  Also the following synonyms are avaialbe: `getUShort()` and `getShort()`.
   - `getUInt8()` and `getInt8()` methods are used to read a 8-bits integer.
+                 Also the following synonyms are avaialbe: `getByte()` and `getChar()`.
 
 The `reset()` method is used to reset reading position to the begin
 of message payload. This may be important because usually there is only
 one global `rx_msg` variable which is used to process all incoming messages.
 So we have to rewind reading poisition after message has been processed.
+
+
+Advanced Usage
+--------------
+
+Since `MAX_MSG_SIZE` message size limit is quite low (because of limited RAM size)
+there is an advanced way - to use messages with external buffer. One more way to
+send a quite big message is to use "stream" writing operation.
+
+
+### External buffer
+
+You could provide a custom byte buffer (as big as you want)
+for input and/or output messages.
+
+`OutputMessageEx` is "advanced" replacement of `OutputMessage`. It provides
+exactly the same methods but uses an external byte buffer. For example, the
+following code snippet sends a quite big message:
+
+~~~{.cpp}
+uint8_t big_buf[1024];
+OutputMessageEx msg(big_buf, sizeof(big_buf), MY_BIG_INTENT_ID);
+for (short i = 0; i < sizeof(big_buf)/2; ++i)
+    msg.putShort(i);
+DH.write(msg);
+~~~
+
+The same way `InputMessageEx` could be used. It is replacement of `InputMessage`
+and contains all the same methods.
+
+~~~{.cpp}
+uint8_t big_rx_buf[1024];
+InputMessageEx rx_msg(big_rx_buf, sizeof(big_rx_buf));
+void loop()
+{
+    if (DH.read(rx_msg) == DH_PARSE_OK)
+    {
+        switch (rx_msg.intent)
+        {
+            ... // process message
+        }
+
+        rx_msg.reset();
+    }
+}
+~~~
+
+Be careful to use the same buffer for input and output messages! You can use
+it only when `DH.read()` returns `DH_PARSE_OK`, i.e. at the end of message
+receiving process. Otherwise, just because the byte buffer contains a part of
+receiving message, output message which using the same buffer will override
+content of receiving input message.
+
+
+### Stream writing
+
+One more way to send big messages is to use stream writing operations.
+It's very low level of DeviceHive engine usage. Be careful to use it!
+
+Let's start with an example writing command result:
+
+~~~{.cpp}
+const unsigned int status_len = strlen(status);
+const unsigned int result_len = strlen(result);
+
+unsigned int checksum = DH.writeHeader(
+    INTENT_COMMAND_RESULT, sizeof(uint32_t)
+    + sizeof(uint16_t) + status_len
+    + sizeof(uint16_t) + result_len);
+checksum += DH.writeUInt32(cmd_id);
+checksum += DH.writeString(status, status_len);
+checksum += DH.writeString(result, result_len);
+DH.writeChecksum(checksum);
+~~~
+
+This is an implementation of the `DH.writeCommandResult(cmd_id, status, result)`
+method. It sends command identifier (32-bits integer) and two strings: status
+and result.
+
+We start message writing by `DH.writeHeader()` method call. It sends message
+signature, message intent and message length. The message length should be
+very carefully calculated! In our case it contains 32-bits integer and two
+string each pretended with 16-bits length.
+
+Next, we send message payload using `DH.writeUInt32()` and two `DH.writeString()`
+method calls.
+
+During the stream writing operation we also have to calculate the whole message
+checksum. It is not so hard to do because each of stream writing method returns
+part of this checksum. All we need to do is to sum all of these values and send
+final checksum at the end of message using `DH.writeChecksum()` method.
+
+The following methods could be used for stream writing operations:
+  - `DH.writeHeader(intent, length)` writes a message header to the serial stream.
+      Should be called at the start of sending output message. Returns header's checksum.
+  - `DH.writePayload(buf, len)` writes a custom payload to the serial stream.
+      Returns payload's checksum.
+  - `DH.writeString(str, len)` writes a string to the serial stream pretended with 16-bits length.
+      Returns payload's checksum.
+  - `DH.writeUInt32(val)` writes 32-bits integer to the serial stream in little-endian format.
+      Returns payload's checksum.
+  - `DH.writeUInt16(val)` writes 16-bits integer to the serial stream in little-endian format.
+      Returns payload's checksum.
+  - `DH.writeChecksum(checksum)` writes checksum byte to the serial stream.
+      Should be called at the end of sending output message.
