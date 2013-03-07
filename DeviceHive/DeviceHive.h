@@ -9,15 +9,17 @@
 #   define MAX_MSG_SIZE 256
 #endif // MAX_MSG_SIZE
 
-// basic message
+// basic message, uses external buffer
 class Message
 {
 public:
-    explicit Message(uint16_t intent = 0);
+    Message(uint8_t *buf, uint16_t buf_size,
+        uint16_t intent = 0);
 
 public:
     uint16_t intent;                // message type identifier
-    uint8_t  buffer[MAX_MSG_SIZE];  // payload buffer
+    uint8_t  *buffer;               // payload buffer
+    uint16_t buffer_size;           // maximum buffer size
     uint16_t length;                // actual payload length
 };
 
@@ -47,9 +49,9 @@ public:
     void putUInt32(uint32_t val);
     void putUInt16(uint16_t val);
     void putUInt8(uint8_t val);
-    void putInt32(int32_t val);
-    void putInt16(int16_t val);
-    void putInt8(int8_t val);
+    void putInt32(int32_t val) { putUInt32(val); }
+    void putInt16(int16_t val) { putUInt16(val); }
+    void putInt8(int8_t val) { putUInt8(val); }
 
     // Arduino friendly names
     void putULong(unsigned long val) { putUInt32(val); }
@@ -58,6 +60,9 @@ public:
     void putLong(long val) { putInt32(val); }
     void putShort(short val) { putInt16(val); }
     void putChar(char val) { putUInt8(val); }
+
+private:
+    uint8_t static_buffer[MAX_MSG_SIZE];
 };
 
 
@@ -77,9 +82,9 @@ public:
     uint32_t getUInt32();
     uint16_t getUInt16();
     uint8_t getUInt8();
-    int32_t getInt32();
-    int16_t getInt16();
-    int8_t getInt8();
+    int32_t getInt32() { return getUInt32(); }
+    int16_t getInt16() { return getUInt16(); }
+    int8_t getInt8() { return getUInt8(); }
 
     // Arduino friendly names
     unsigned long getULong() { return getUInt32(); }
@@ -90,6 +95,7 @@ public:
     char getChar() { return getInt8(); }
 
 private:
+    uint8_t static_buffer[MAX_MSG_SIZE];
     uint16_t read_pos;      // current "read" position
 };
 
@@ -119,7 +125,6 @@ public:
     void end();
 
 public:
-
     int read(Message *msg);
     int read(Message &msg);
 

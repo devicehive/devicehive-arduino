@@ -10,8 +10,10 @@
 
 
 // default/main constructor
-Message::Message(uint16_t msg_intent)
+Message::Message(uint8_t *buf, uint16_t buf_size, uint16_t msg_intent)
     : intent(msg_intent)
+    , buffer(buf)
+    , buffer_size(buf_size)
     , length(0)
 {}
 
@@ -19,14 +21,14 @@ Message::Message(uint16_t msg_intent)
 
 // main constructor
 OutputMessage::OutputMessage(uint16_t intent)
-    : Message(intent)
+    : Message(static_buffer, sizeof(static_buffer), intent)
 {}
 
 
 // put custom binary data
 void OutputMessage::put(const void *buf, unsigned int len)
 {
-    if (length+len <= MAX_MSG_SIZE)
+    if (length+len <= buffer_size)
     {
         memcpy(buffer+length, buf, len);
         length += len;
@@ -38,7 +40,7 @@ void OutputMessage::put(const void *buf, unsigned int len)
 // put custom string
 void OutputMessage::putString(const char *str, unsigned int len)
 {
-    if (length+sizeof(len)+len <= MAX_MSG_SIZE)
+    if (length+sizeof(uint16_t)+len <= buffer_size)
     {
         putUInt16(len);
         put(str, len);
@@ -56,7 +58,7 @@ void OutputMessage::putString(const char *str)
 // put unsigned 32-bits integer (little-endian)
 void OutputMessage::putUInt32(uint32_t val)
 {
-    if (length+sizeof(val) <= MAX_MSG_SIZE)
+    if (length+sizeof(val) <= buffer_size)
     {
         buffer[length++] = (val   ) & 0xFF;
         buffer[length++] = (val>>8) & 0xFF;
@@ -70,7 +72,7 @@ void OutputMessage::putUInt32(uint32_t val)
 // put unsigned 16-bits integer (little-endian)
 void OutputMessage::putUInt16(uint16_t val)
 {
-    if (length+sizeof(val) <= MAX_MSG_SIZE)
+    if (length+sizeof(val) <= buffer_size)
     {
         buffer[length++] = (val   ) & 0xFF;
         buffer[length++] = (val>>8) & 0xFF;
@@ -82,7 +84,7 @@ void OutputMessage::putUInt16(uint16_t val)
 // put unsigned 8-bits integer
 void OutputMessage::putUInt8(uint8_t val)
 {
-    if (length+sizeof(val) <= MAX_MSG_SIZE)
+    if (length+sizeof(val) <= buffer_size)
     {
         buffer[length++] = val;
     }
@@ -90,31 +92,10 @@ void OutputMessage::putUInt8(uint8_t val)
 }
 
 
-// put signed 32-bits integer (little-endian)
-void OutputMessage::putInt32(int32_t val)
-{
-    putUInt32(val);
-}
-
-
-// put signed 16-bits integer (little-endian)
-void OutputMessage::putInt16(int16_t val)
-{
-    putUInt16(val);
-}
-
-
-// put signed 8-bits integer
-void OutputMessage::putInt8(int8_t val)
-{
-    putUInt8(val);
-}
-
-
 
 // default constructor
 InputMessage::InputMessage()
-    : Message(0)
+    : Message(static_buffer, sizeof(static_buffer), 0)
     , read_pos(0)
 {}
 
@@ -230,27 +211,6 @@ uint8_t InputMessage::getUInt8()
 }
 
 
-// get signed 32-bits integer (little-endian)
-int32_t InputMessage::getInt32()
-{
-    return getUInt32();
-}
-
-
-// get signed 16-bits integer (little-endian)
-int16_t InputMessage::getInt16()
-{
-    return getUInt16();
-}
-
-
-// get signed 8-bits integer
-int8_t InputMessage::getInt8()
-{
-    return getUInt8();
-}
-
-
 
 // default constructor
 DeviceHive::DeviceHive()
@@ -263,7 +223,7 @@ DeviceHive::DeviceHive()
 {}
 
 
-// set RX timeout, milliseconds
+// set RX timeout, milliseconds, 0 - no timeout
 void DeviceHive::setRxTimeout(unsigned long ms)
 {
     rx_timeout = ms;
@@ -361,7 +321,7 @@ int DeviceHive::read(Message &msg)
 
             case STATE_LENGTH2:
                 rx_msg_len |= b << 8; // high byte
-                if (rx_msg_len > MAX_MSG_SIZE)
+                if (rx_msg_len > msg.buffer_size)
                 {
                     rx_state = STATE_SIGNATURE1;
                     return DH_PARSE_MESSAGE_TOO_BIG;
@@ -381,7 +341,7 @@ int DeviceHive::read(Message &msg)
                 break;
 
             case STATE_PAYLOAD:
-                if (msg.length+1 <= MAX_MSG_SIZE)
+                if (msg.length+1 <= msg.buffer_size)
                     msg.buffer[msg.length++] = b;
                 if (--rx_msg_len == 0)
                     rx_state = STATE_CHECKSUM;
