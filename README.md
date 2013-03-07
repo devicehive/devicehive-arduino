@@ -190,7 +190,7 @@ Advanced Usage
 --------------
 
 Since `MAX_MSG_SIZE` message size limit is quite low (because of limited RAM size)
-there is an advanced way - to use messages with external buffer. One more way to
+there is an advanced way - to use messages with an external buffer. One more way to
 send a quite big message is to use "stream" writing operation.
 
 
@@ -199,20 +199,20 @@ send a quite big message is to use "stream" writing operation.
 You could provide a custom byte buffer (as big as you want)
 for input and/or output messages.
 
-`OutputMessageEx` is "advanced" replacement of `OutputMessage`. It provides
+`OutputMessageEx` is an advanced replacement of `OutputMessage`. It provides
 exactly the same methods but uses an external byte buffer. For example, the
 following code snippet sends a quite big message:
 
 ~~~{.cpp}
 uint8_t big_buf[1024];
-OutputMessageEx msg(big_buf, sizeof(big_buf), MY_BIG_INTENT_ID);
+OutputMessageEx msg(big_buf, sizeof(big_buf), MY_INTENT_ID);
 for (short i = 0; i < sizeof(big_buf)/2; ++i)
     msg.putShort(i);
 DH.write(msg);
 ~~~
 
-The same way `InputMessageEx` could be used. It is replacement of `InputMessage`
-and contains all the same methods.
+The same way `InputMessageEx` could be used. It is an advanced replacement
+of `InputMessage` and contains all the same methods.
 
 ~~~{.cpp}
 uint8_t big_rx_buf[1024];
@@ -234,16 +234,16 @@ void loop()
 Be careful to use the same buffer for input and output messages! You can use
 it only when `DH.read()` returns `DH_PARSE_OK`, i.e. at the end of message
 receiving process. Otherwise, just because the byte buffer contains a part of
-receiving message, output message which using the same buffer will override
+receiving message, output message which use the same buffer will override
 content of receiving input message.
 
 
 ### Stream writing
 
 One more way to send big messages is to use stream writing operations.
-It's very low level of DeviceHive engine usage. Be careful to use it!
+It's very low level of DeviceHive engine usage. Use it with care!
 
-Let's start with an example writing command result:
+Let's start with an example which writes command result:
 
 ~~~{.cpp}
 const unsigned int status_len = strlen(status);
@@ -264,28 +264,30 @@ method. It sends command identifier (32-bits integer) and two strings: status
 and result.
 
 We start message writing by `DH.writeHeader()` method call. It sends message
-signature, message intent and message length. The message length should be
-very carefully calculated! In our case it contains 32-bits integer and two
+signature, message intent and length. The message length should be very
+carefully calculated! In our case it contains 32-bits integer and two
 string each pretended with 16-bits length.
 
 Next, we send message payload using `DH.writeUInt32()` and two `DH.writeString()`
 method calls.
 
 During the stream writing operation we also have to calculate the whole message
-checksum. It is not so hard to do because each of stream writing method returns
+checksum. It is not so hard to do because each of stream writing methods returns
 part of this checksum. All we need to do is to sum all of these values and send
-final checksum at the end of message using `DH.writeChecksum()` method.
+final checksum at the end of message using `DH.writeChecksum()` method call.
 
-The following methods could be used for stream writing operations:
+It's all. We've sent command result.
+
+To sum up, the following methods could be used for stream writing operations:
   - `DH.writeHeader(intent, length)` writes a message header to the serial stream.
-      Should be called at the start of sending output message. Returns header's checksum.
+      Should be called at the start of sending output message. Returns header's checksum part.
   - `DH.writePayload(buf, len)` writes a custom payload to the serial stream.
-      Returns payload's checksum.
+      Returns payload's checksum part.
   - `DH.writeString(str, len)` writes a string to the serial stream pretended with 16-bits length.
-      Returns payload's checksum.
+      Returns payload's checksum part.
   - `DH.writeUInt32(val)` writes 32-bits integer to the serial stream in little-endian format.
-      Returns payload's checksum.
+      Returns payload's checksum part.
   - `DH.writeUInt16(val)` writes 16-bits integer to the serial stream in little-endian format.
-      Returns payload's checksum.
+      Returns payload's checksum part.
   - `DH.writeChecksum(checksum)` writes checksum byte to the serial stream.
       Should be called at the end of sending output message.
