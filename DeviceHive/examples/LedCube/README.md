@@ -19,8 +19,8 @@ connect it to the DeviceHive server directly. So we use [Raspberry Pi] as a
 gateway. It also translates [REST protocol](http://www.devicehive.com/restful)
 to the [binary protocol](http://www.devicehive.com/binary).
 
-iPhone/iPad application allows user to pick up a custom color and fill
-the whole or a part of [Rainbow Cube].
+iPhone/iPad or HTML5 applications allow user to pick up a custom color
+and fill the whole or a part of [Rainbow Cube].
 
 The control flow is simple: User selects a color. iPhone application sends
 a command to the [DeviceHive] server. [Raspberry Pi] grabs that command from
@@ -46,7 +46,7 @@ communicate with the [Raspebrry Pi] gateway. We support the following commands:
 To build firmware you have to provide two additional dependencies:
 
 - [Rainbowduino library](http://www.seeedstudio.com/wiki/images/4/43/Rainbowduino_for_Arduino1.0.zip)
-- [DeviceHive Arduino library](http://www.devicehive.com/ARDUINO_LIBRARY.zip)
+- [DeviceHive Arduino library](https://github.com/Pilatuz/devicehive-arduino/archive/1.0.zip)
 
 Please unpack these dependencies into the Arduino’s `libraries` path.
 Now you can build LedCube example and flash the [Rainbowduino] board.
@@ -134,8 +134,17 @@ The message intent for this command is 256 which is the minimum intent number
 for user-defined intents. A Color structure (RGB components) is used
 as parameter for this command.
 
+~~~{.cpp}
+struct Color
+{
+    uint8_t R;
+    uint8_t G;
+    uint8_t B;
+};
+~~~
+
 Registration data for this command is `{intent:256,name:"fill",params:{R:u8,G:u8,B:u8}}`.
-So the corresponding DeviceHive command (defined by the REST protocol) which looks like:
+A corresponding DeviceHive command (defined by the REST protocol) which looks like
 
 ~~~{.js}
 {
@@ -223,7 +232,7 @@ else
 }
 ~~~
 
-Contrary to the first command we a read number of color structures provided.
+Contrary to the first command we read number of color structures provided.
 If this number isn't equal to the number of LEDs we report error back to
 the gateway. Otherwise we read color for each LED individually (Z->Y->X)
 and apply it.
@@ -239,6 +248,21 @@ arduino library (see `MAX_MSG_SIZE` constant) we cannot send more that
 
 The message intent for this command is 258. An array of Pixel structures
 is used as parameter for this command.
+
+~~~{.cpp}
+struct Point
+{
+    uint8_t X;
+    uint8_t Y;
+    uint8_t Z;
+};
+
+struct Pixel
+{
+    Point point;
+    Color color;
+};
+~~~
 
 Registration data for this command is `{intent:258,name:"pixels",params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}`.
 Along with the RGB components each pixels contains the XYZ coordinates.
@@ -280,4 +304,4 @@ Conclusion
 ----------
 
 This example demonstrated how to control your [Rainbow Cube] over Internet
-using DeviceHive framework. See also the iPhone/iPad part of this example.
+using DeviceHive framework. See also the iPhone/iPad or HTML5 parts of this example.
