@@ -9,8 +9,8 @@ Installation
 ------------
 
 Installation of DeviceHive Arduino library is quite simple. Just download
-library archive [here](http://www.devicehive.com/TODO_ARDUINO_LIBRARY.zip) and
-unpack it to the `libraries` folder of your Arduino installation path.
+library archive [here](https://github.com/Pilatuz/devicehive-arduino/archive/1.0.zip)
+and unpack it to the `libraries` folder of your Arduino installation path.
 More details could be found at corresponding [Arduino](http://arduino.cc/en/Guide/Libraries) page.
 
 
@@ -76,8 +76,8 @@ DH.begin(Serial);
 
 ### Sending messages
 
-To send message one of `DH.write()` methods should be used. But before you have
-to prepare message. The `OutputMessage` provides interface for message formatting.
+To send message one of `DH.write()` methods should be used. But you have to prepare
+message before. The `OutputMessage` provides interface for message formatting.
 The following example shows how to send command result which contains command
 identifier, status and result.
 
@@ -91,7 +91,7 @@ DH.write(msg);
 
 There are also a few auxiliary *writeXXX* methods to send a system-defined messages:
   - `DH.writeRegistrationResponse(data)` - sends registration data in JSON format.
-  - `DH.writeCommandResult(id, status, result)` - sends command result exactly the same way as example above.
+  - `DH.writeCommandResult(id, status, result)` - sends command result as example above.
 
 
 ### Receiving messages
@@ -147,8 +147,8 @@ A message has intent number which identifies message purpose and a custom
 payload which depends on the message intent. The maximum message payload size
 is statically defined by the `MAX_MSG_SIZE` constant which is 256 by default.
 That means that library is unable to process messages with payload size more
-than 256 bytes although DeviceHive binary protocol allows messages up to 64K.
-See next section for advanced message usage.
+than 256 bytes although DeviceHive binary protocol allows messages up to 64K
+(see next section for advanced message usage).
 
 
 ### Formatting
@@ -234,16 +234,16 @@ void loop()
 Be careful to use the same buffer for input and output messages! You can use
 it only when `DH.read()` returns `DH_PARSE_OK`, i.e. at the end of message
 receiving process. Otherwise, just because the byte buffer contains a part of
-receiving message, output message which use the same buffer will override
+receiving message, output message which uses the same buffer will override
 content of receiving input message.
 
 
 ### Stream writing
 
-One more way to send big messages is to use stream writing operations.
+One more way to send big messages is to use stream writing methods.
 It's very low level of DeviceHive engine usage. Use it with care!
 
-Let's start with an example which writes command result:
+Let's start with an example which writes a command result:
 
 ~~~{.cpp}
 const unsigned int status_len = strlen(status);
