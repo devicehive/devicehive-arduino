@@ -1,4 +1,4 @@
-﻿DeviceHive library for Arduino
+DeviceHive library for Arduino
 ==============================
 
 This is auxiliary library implementing [DeviceHive](http://www.devicehive.com/)

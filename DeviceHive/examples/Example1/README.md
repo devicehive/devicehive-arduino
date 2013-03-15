@@ -1,4 +1,4 @@
-﻿DeviceHive and Arduino
+DeviceHive and Arduino
 ===========================
 
 [Raspberry Pi]: http://www.raspberrypi.org "Raspberry Pi official site"
@@ -6,7 +6,7 @@
 [Arduino]: http://arduino.cc/en/ "Arduino official site"
 
 
-This is the most basic sample of DeviceHive [Raspberry Pi] – [Arduino] combo.
+This is the most basic sample of DeviceHive [Raspberry Pi] - [Arduino] combo.
 To set it up, you should download the Raspberry Pi [Python gateway](http://TODO_PYTHON_GATEWAY.zip)
 upload it to Rasberry Pi and install Twisted module by running `sudo apt-get install python-twisted`
 command. After this you should run `nano basic_gateway_example.py` to edit
@@ -16,9 +16,9 @@ Typically it is `/dev/ttyUSB0` or `/dev/ttyACM0` (you can verify by running
 `ls /dev/tty*`). These settings can be found in the very end of the file.
 
 After you save the file and run it, the gatway code will request Arduino for
-it’s initialization parameters and pass them to DeviceHive cloud. After that
+it's initialization parameters and pass them to DeviceHive cloud. After that
 you will be able to send command and get notifications to/from your Arduino.
-In this example, the commands are "set" – which will set the state of on-board
+In this example, the commands are "set" - which will set the state of on-board
 LED connected to pin 13 to on/off (1/0) and "blink" which will accept
 a structure which consists of on/off/count fields to set on/off period
 in milliseconds and count (for example: `{"on":500, "off":1000, "count":5}`).
@@ -26,10 +26,10 @@ In addition to these commands, the sample Arduino code will also be sending
 notifications when pin 12 changes its sate. You can test it by
 connecting/disconnecting +5V probe to PIN 12 to simulate LOW/HIGH states.
 
-Let’s take a closer look at the example:
+Let's take a closer look at the example:
 
 `REG_DATA` contains registration string which gives the device information to
-the gateway describing it’s capabilities: commands it can handle
+the gateway describing it's capabilities: commands it can handle
 and notifications it can send.
 
 *Describe how simple, struct and notifications are defined*. Please refer

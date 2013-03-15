@@ -1,4 +1,4 @@
-﻿DeviceHive and Rainbow Cube
+DeviceHive and Rainbow Cube
 ===========================
 
 [Rainbow Cube]: http://seeedstudio.com/wiki/Rainbow_Cube "Rainbow Cube wiki page"
@@ -9,12 +9,12 @@
 
 [Rainbow Cube] is an array of RGB LEDs. Each LED is managed by
 an Arduino-compatible controller called [Rainbowduino].
-Using Rainbowduino library it’s possible to set RGB color
+Using Rainbowduino library it's possible to set RGB color
 for each LED individually.
 
 [Rainbowduino] is flashed with simple Arduino firmware which translates
 commands from the DeviceHive server to the Rainbowduino library.
-Because [Rainbow Cube] doesn’t have Internet connection itself, we cannot
+Because [Rainbow Cube] doesn't have Internet connection itself, we cannot
 connect it to the DeviceHive server directly. So we use [Raspberry Pi] as a
 gateway. It also translates [REST protocol](http://www.devicehive.com/restful)
 to the [binary protocol](http://www.devicehive.com/binary).
@@ -48,7 +48,7 @@ To build firmware you have to provide two additional dependencies:
 - [Rainbowduino library](http://www.seeedstudio.com/wiki/images/4/43/Rainbowduino_for_Arduino1.0.zip)
 - [DeviceHive Arduino library](https://github.com/Pilatuz/devicehive-arduino/archive/1.0.zip)
 
-Please unpack these dependencies into the Arduino’s `libraries` path.
+Please unpack these dependencies into the Arduino's `libraries` path.
 Now you can build LedCube example and flash the [Rainbowduino] board.
 
 
