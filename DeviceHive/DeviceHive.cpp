@@ -95,13 +95,6 @@ void OutputMessageEx::putUInt8(uint8_t val)
 
 
 // main constructor
-OutputMessage::OutputMessage(uint16_t msg_intent)
-    : OutputMessageEx(static_buffer, sizeof(static_buffer), msg_intent)
-{}
-
-
-
-// main constructor
 InputMessageEx::InputMessageEx(uint8_t *buf, uint16_t buf_size)
     : Message(buf, buf_size, 0)
     , read_pos(0)
@@ -217,13 +210,6 @@ uint8_t InputMessageEx::getUInt8()
 
     return val;
 }
-
-
-
-// default constructor
-InputMessage::InputMessage()
-    : InputMessageEx(static_buffer, sizeof(static_buffer))
-{}
 
 
 

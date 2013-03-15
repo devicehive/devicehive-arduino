@@ -89,7 +89,7 @@ void loop(void)
             case 256:   // "fill" - fill the whole Cube with one color
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
-                Color color; rx_msg.get(&color, sizeof(color));
+                Color color = rx_msg.get<Color>();
 
                 for (int x = 0; x < NX; ++x)
                     for (int y = 0; y < NY; ++y)
@@ -114,7 +114,7 @@ void loop(void)
                         for (int y = 0; y < NY; ++y)
                             for (int z = 0; z < NZ; ++z)
                     {
-                        Color color; rx_msg.get(&color, sizeof(color));
+                        Color color = rx_msg.get<Color>();
                         Rb.setPixelZXY(z, x, y,
                             color.R, color.G, color.B);
                     }
@@ -134,8 +134,7 @@ void loop(void)
                 const uint16_t count = rx_msg.getUInt16();
                 for (uint16_t i = 0; i < count; ++i)
                 {
-                    Pixel px; rx_msg.get(&px, sizeof(px));
-
+                    Pixel px = rx_msg.get<Pixel>();
                     Rb.setPixelZXY(px.point.Z, px.point.X, px.point.Y,
                                    px.color.R, px.color.G, px.color.B);
                 }

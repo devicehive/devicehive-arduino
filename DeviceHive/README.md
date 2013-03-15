@@ -155,6 +155,7 @@ than 256 bytes although DeviceHive binary protocol allows messages up to 64K
 
 The `OutputMessage` provides a set of methods to format message payload:
   - `put(buf, len)` method is used to write custom byte sequence such as a custom structure.
+                    Also the `put(val)` auxiliary template methods are available.
   - `putString(str, len)` method prepends string content with 2-bytes string length.
   - `putString(str)` method prepends NULL-terminated string content with 2-bytes string length.
   - `putUInt32(val)` and `putInt32(val)` methods are used to write a 32-bits integer in little-endian format.
@@ -172,6 +173,7 @@ Each of these methods does nothing if there is no enough space in message payloa
 The `InputMessage` provides a set of methods to parse message payload:
   - `skip(len)` method just skips specified number of bytes.
   - `get(buf, len)` method is used to read custom byte sequence such a custom structure.
+                    Also the `get(val)` auxiliary template methods are available.
   - `getString(str, max_len)` method reads string length and string content. Returned string is always NULL-terminated.
   - `getUInt32()` and `getInt32()` methods are used to read a 32-bits integer in little-endian format.
                   Also the following synonyms are avaialbe: `getULong()` and `getLong()`.
@@ -189,9 +191,10 @@ So we have to rewind reading poisition after message has been processed.
 Advanced Usage
 --------------
 
-Since `MAX_MSG_SIZE` message size limit is quite low (because of limited RAM size)
-there is an advanced way - to use messages with an external buffer. One more way to
-send a quite big message is to use "stream" writing operation.
+There are a few advanced usage practices:
+  - messages with an external buffer
+  - messages with custom static buffer size
+  - *stream* writing operations
 
 
 ### External buffer
@@ -238,9 +241,28 @@ receiving message, output message which uses the same buffer will override
 content of receiving input message.
 
 
+### Custom static buffer size
+
+There is possible to use message class templates with static buffer size as
+the template argument. The output message example from the section above
+could be rewritten as:
+
+~~~{.cpp}
+OutputMessageN<1024> msg(MY_INTENT_ID);
+...
+~~~
+
+The input message example could be rewritten as:
+
+~~~{.cpp}
+InputMessageN<1024> rx_msg;
+...
+~~~
+
+
 ### Stream writing
 
-One more way to send big messages is to use stream writing methods.
+One more way to send big messages is to use *stream* writing methods.
 It's very low level of DeviceHive engine usage. Use it with care!
 
 Let's start with an example which writes a command result:
@@ -271,14 +293,14 @@ string each pretended with 16-bits length.
 Next, we send message payload using `DH.writeUInt32()` and two `DH.writeString()`
 method calls.
 
-During the stream writing operation we also have to calculate the whole message
-checksum. It is not so hard to do because each of stream writing methods returns
+During the *stream* writing operation we also have to calculate the whole message
+checksum. It is not so hard to do because each of *stream* writing methods returns
 part of this checksum. All we need to do is to sum all of these values and send
 final checksum at the end of message using `DH.writeChecksum()` method call.
 
 It's all. We've sent command result.
 
-To sum up, the following methods could be used for stream writing operations:
+To sum up, the following methods could be used for *stream* writing operations:
   - `DH.writeHeader(intent, length)` writes a message header to the serial stream.
       Should be called at the start of sending output message. Returns header's checksum part.
   - `DH.writePayload(buf, len)` writes a custom payload to the serial stream.

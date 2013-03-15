@@ -47,6 +47,20 @@ public:
 public:
     void put(const void *buf, unsigned int len);
 
+    template<typename T>
+    void put(const T &val)
+    {
+        put(&val, sizeof(val));
+    }
+
+    template<typename T>
+    void put(const T *pval)
+    {
+        if (pval)
+            put(pval, sizeof(*pval));
+    }
+
+public:
     void putString(const char *str, unsigned int len);
     void putString(const char *str);
     void putUInt32(uint32_t val);
@@ -67,15 +81,20 @@ public: // Arduino friendly names
 
 
 // message + formatting, uses static buffer
-class OutputMessage:
+template<unsigned int N>
+class OutputMessageN:
     public OutputMessageEx
 {
 public:
-    explicit OutputMessage(uint16_t intent = 0);
+    explicit OutputMessageN(uint16_t intent = 0)
+        : OutputMessageEx(static_buffer, sizeof(static_buffer), intent)
+    {}
 
 private:
-    uint8_t static_buffer[MAX_MSG_SIZE];
+    uint8_t static_buffer[N];
 };
+
+typedef OutputMessageN<MAX_MSG_SIZE> OutputMessage;
 
 
 // message + parsing, uses external buffer
@@ -91,6 +110,28 @@ public:
     void skip(unsigned int len);
     void get(void *buf, unsigned int len);
 
+    template<typename T>
+    void get(T &val)
+    {
+        get(&val, sizeof(val));
+    }
+
+    template<typename T>
+    void get(T *pval)
+    {
+        if (pval)
+            get(pval, sizeof(*pval));
+    }
+
+    template<typename T>
+    T get()
+    {
+        T val;
+        get(&val, sizeof(val));
+        return val;
+    }
+
+public:
     unsigned int getString(char *str, unsigned int max_len);
     uint32_t getUInt32();
     uint16_t getUInt16();
@@ -113,15 +154,20 @@ private:
 
 
 // message + parsing, uses static buffer
-class InputMessage:
+template<unsigned int N>
+class InputMessageN:
     public InputMessageEx
 {
 public:
-    InputMessage();
+    InputMessageN()
+        : InputMessageEx(static_buffer, sizeof(static_buffer))
+    {}
 
 private:
-    uint8_t static_buffer[MAX_MSG_SIZE];
+    uint8_t static_buffer[N];
 };
+
+typedef InputMessageN<MAX_MSG_SIZE> InputMessage;
 
 
 // message parsing result
