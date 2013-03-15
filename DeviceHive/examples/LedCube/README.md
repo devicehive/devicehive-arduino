@@ -67,17 +67,17 @@ a response to registration request message. We use JSON format:
 ~~~{.cpp}
 // LedCube device registration data
 const char *REG_DATA = "{"
-    "id:\"b125698d-61bd-40d7-b65e-e1f86852a166\","
-    "key:\"LED_cube\","
-    "name:\"LED Cube\","
+    "id:'b125698d-61bd-40d7-b65e-e1f86852a166',"
+    "key:'LED_cube',"
+    "name:'LED Cube',"
     "deviceClass:{"
-        "name:\"LED_cube\","
-        "version:\"1.0\"},"
-    "equipment:[{code:\"cube\",name:\"cube\",type:\"LED_Cube\"}],"
+        "name:'LED_cube',"
+        "version:'1.0'},"
+    "equipment:[{code:'cube',name:'cube',type:'LED_Cube'}],"
     "commands:["
-        "{intent:256,name:\"fill\",params:{R:u8,G:u8,B:u8}}"
-        "{intent:257,name:\"cube\",params:[{R:u8,G:u8,B:u8}]}"
-        "{intent:258,name:\"pixels\",params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]},"
+        "{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8}}"
+        "{intent:1002,name:'cube',params:[{R:u8,G:u8,B:u8}]}"
+        "{intent:1003,name:'pixels',params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]},"
     "],"
     "notifications:[]"
 "}";
@@ -130,9 +130,8 @@ and "pixels". Let's look at these commands in more detail.
 
 #### "fill" command
 
-The message intent for this command is 256 which is the minimum intent number
-for user-defined intents. A Color structure (RGB components) is used
-as parameter for this command.
+The message intent for this command is 1001. A `Color` structure (RGB components)
+is used as parameter for this command.
 
 ~~~{.cpp}
 struct Color
@@ -143,7 +142,7 @@ struct Color
 };
 ~~~
 
-Registration data for this command is `{intent:256,name:"fill",params:{R:u8,G:u8,B:u8}}`.
+Registration data for this command is `{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8}}`.
 A corresponding DeviceHive command (defined by the REST protocol) which looks like
 
 ~~~{.js}
@@ -187,10 +186,10 @@ send it to the DeviceHive server.
 
 #### "cube" command
 
-The message intent for this command is 257. An array of Color structures
+The message intent for this command is 1002. An array of `Color` structures
 is used as parameter for this command.
 
-Registration data for this command is `{intent:257,name:"cube",params:[{R:u8,G:u8,B:u8}]}`.
+Registration data for this command is `{intent:1002,name:'cube',params:[{R:u8,G:u8,B:u8}]}`.
 Please note the square braces in the registration data. This means "array of" structures.
 Corresponding DeviceHive command (defined by the REST protocol) should look like:
 
@@ -246,7 +245,7 @@ because message payload length is limited to the 256 bytes in DeviceHive
 arduino library (see `MAX_MSG_SIZE` constant) we cannot send more that
 41 pixels at once (which is more than half of LEDs in our case).
 
-The message intent for this command is 258. An array of Pixel structures
+The message intent for this command is 1003. An array of `Pixel` structures
 is used as parameter for this command.
 
 ~~~{.cpp}
@@ -264,7 +263,7 @@ struct Pixel
 };
 ~~~
 
-Registration data for this command is `{intent:258,name:"pixels",params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}`.
+Registration data for this command is `{intent:1003,name:'pixels',params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}`.
 Along with the RGB components each pixels contains the XYZ coordinates.
 Corresponding DeviceHive command (defined by the REST protocol) should look like:
 

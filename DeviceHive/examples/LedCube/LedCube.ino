@@ -5,19 +5,21 @@
 #define CMD_STATUS_FAILED       "Failed"
 #define CMD_RESULT_OK           "OK"
 
-// LedCube device registration data
+// device registration data
+// intent numbers should be greater than 255!
+// please refer to http://www.devicehive.com/binary/#SystemMessages/RegisterJson for complete syntax of registration info
 const char *REG_DATA = "{"
-    "id:\"b125698d-61bd-40d7-b65e-e1f86852a166\","
-    "key:\"LED_Cube\","
-    "name:\"LED Cube\","
+    "id:'b125698d-61bd-40d7-b65e-e1f86852a166',"
+    "key:'LED_Cube',"
+    "name:'LED Cube',"
     "deviceClass:{"
-        "name:\"LED_cube\","
-        "version:\"1.0\"},"
-    "equipment:[{code:\"cube\",name:\"cube\",type:\"LED_Cube\"}],"
+        "name:'LED_cube',"
+        "version:'1.0'},"
+    "equipment:[{code:'cube',name:'cube',type:'LED_Cube'}],"
     "commands:["
-        "{intent:256,name:\"fill\",params:{R:u8,G:u8,B:u8}},"
-        "{intent:257,name:\"cube\",params:[{R:u8,G:u8,B:u8}]},"
-        "{intent:258,name:\"pixels\",params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}"
+        "{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8}},"
+        "{intent:1002,name:'cube',params:[{R:u8,G:u8,B:u8}]},"
+        "{intent:1003,name:'pixels',params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}"
     "],"
     "notifications:[]"
 "}";
@@ -65,8 +67,7 @@ void setup(void)
     Rb.init(); // initialize Rainbowduino driver
     Rb.blankDisplay();
 
-    Serial.begin(9600);
-
+    Serial.begin(115200);
     DH.begin(Serial);
     DH.writeRegistrationResponse(REG_DATA);
 }
@@ -86,7 +87,7 @@ void loop(void)
                 break;
 
 
-            case 256:   // "fill" - fill the whole Cube with one color
+            case 1001:   // "fill" - fill the whole Cube with one color
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
                 Color color = rx_msg.get<Color>();
@@ -103,7 +104,7 @@ void loop(void)
             } break;
 
 
-            case 257:   // "cube" - fill the whole Cube with individual color for each pixel
+            case 1002:   // "cube" - fill the whole Cube with individual color for each pixel
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
                 const uint16_t count = rx_msg.getUInt16();
@@ -128,7 +129,7 @@ void loop(void)
             } break;
 
 
-            case 258: // "pixels" - fill several pixels
+            case 1003: // "pixels" - fill several pixels
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
                 const uint16_t count = rx_msg.getUInt16();
