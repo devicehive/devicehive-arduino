@@ -4,9 +4,9 @@
 #define CMD_STATUS_FAILED       "Failed"
 #define CMD_RESULT_OK           "OK"
 
-// LedCube device registration data
-// Intent numbers should be greater than 255
-// Please refer to URL for complete syntax of registration info 
+// device registration data
+// intent numbers should be greater than 255!
+// please refer to http://www.devicehive.com/binary/#SystemMessages/RegisterJson for complete syntax of registration info
 const char *REG_DATA = "{"
     "\"id\":\"f4b07b4d-5b02-47e7-bd9b-c8d56e0cfdd1\","
     "\"key\":\"Arduino_LED\","
@@ -24,21 +24,18 @@ const char *REG_DATA = "{"
     "]"
 "}";
 
-InputMessage rx_msg; // received message
+const int BTN_PIN = 12;
 const int LED_PIN = 13;
-const int BUTTON_PIN = 12;
 
-int oldButtonState;
-
-// VERY IMPORTANT: the order and types of fields in struct should be exactly the same as those
-// defined in initialization string *REG_DATA
-// {\"intent\":257,\"name\":\"blink\",\"params\":{\"on\":\"u16\",\"off\":\"u16\",\"count\":\"u8\"}}
+// VERY IMPORTANT: the order and types of fields in struct
+// should be exactly the same as those defined in registration data
+// {\"intent\":1001,\"name\":\"blink\",\"params\":{\"on\":\"u16\",\"off\":\"u16\",\"count\":\"u8\"}}
 
 struct BlinkParam
 {
-  short on;
-  short off;
-  byte count;  
+    unsigned short on;
+    unsigned short off;
+    byte count;
 };
 
 void setLedState(int state)
@@ -53,35 +50,38 @@ void sendButtonState(int state)
     DH.write(tx_msg);
 }
 
+
+InputMessage rx_msg; // received message
+int old_btn_state;
+
 /**
  * Initializes the Arduino firmware.
  */
 void setup(void)
 {
-    Serial.begin(115200);
-    
     pinMode(LED_PIN, OUTPUT);
-    pinMode(BUTTON_PIN, INPUT_PULLUP); // ... so you don't need a pull-up resistor
-    
-    oldButtonState = digitalRead(BUTTON_PIN);
+    pinMode(BTN_PIN, INPUT_PULLUP); // ... so you don't need a pull-up resistor
+    old_btn_state = digitalRead(BTN_PIN);
 
+    Serial.begin(115200);
     DH.begin(Serial);
     DH.writeRegistrationResponse(REG_DATA);
 }
+
 
 /**
  * Loop procedure is called continuously.
  */
 void loop(void)
 {
-    int buttonState = digitalRead(BUTTON_PIN);
-    
-    if (buttonState != oldButtonState)
+    // ned button state change notifications
+    const int btn_state = digitalRead(BTN_PIN);
+    if (btn_state != old_btn_state)
     {
-      sendButtonState(buttonState);  
-      oldButtonState = buttonState;
-    }    
-    
+        sendButtonState(btn_state);
+        old_btn_state = btn_state;
+    }
+
     if (DH.read(rx_msg) == DH_PARSE_OK)
     {
         switch (rx_msg.intent)
@@ -91,34 +91,32 @@ void loop(void)
                 break;
 
 
-            case 1000:
+            case 1000: // "set" - sets the LED state
             {
                 const long cmd_id = rx_msg.getLong();
                 const byte state = rx_msg.getByte();
 
                 setLedState(state);
                 DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-                break;
-            } 
-            case 1001:
+            } break;
+
+
+            case 1001: // "blink" - blinks the LED
             {
-              const long cmd_id = rx_msg.getLong();
-              
-              BlinkParam p;
-              
-              rx_msg.get(&p, sizeof(p));
-              
-              for (int i = 0; i < p.count; i++)
-              {
-                setLedState(1);
-                delay(p.on);
-                setLedState(0);
-                delay(p.off);  
-              }
-              
-              DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-              break;
-            }
+                const long cmd_id = rx_msg.getLong();
+                BlinkParam params = rx_msg.get<BlinkParam>();
+                // TODO: check for very long delays?
+
+                for (int i = 0; i < params.count; ++i)
+                {
+                    setLedState(1);     // ON
+                    delay(params.on);
+                    setLedState(0);     // OFF
+                    delay(params.off);
+                }
+
+                DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
+            } break;
         }
 
         rx_msg.reset(); // reset for the next message parsing
