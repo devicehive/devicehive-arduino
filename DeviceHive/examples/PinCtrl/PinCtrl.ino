@@ -21,7 +21,9 @@ const char *REG_DATA = "{"
     "],"
     "notifications:["
         "{intent:2001,name:'pinMode',params:{pin:u8,mode:u8}},"
-        "{intent:2003,name:'pinRead',params:{pin:u8,value:u16}}"
+        "{intent:2003,name:'pinRead',params:{pin:u8,value:u16}},"
+        "{intent:2004,name:'pinWrite',params:{pin:u8,value:u16}},"
+        "{intent:2010,name:'reset',params:null}"
     "]"
 "}";
 
@@ -38,22 +40,29 @@ enum PinMode
     N_PINS = 14
 };
 
-uint8_t pin_mode[N_PINS];
+struct PinState
+{
+    uint8_t mode;
+    //uint16_t last_read;
+    //unsigned int auto_read;
+};
+
+PinState pin_state[N_PINS];
 InputMessage rx_msg; // received message
 
-void sendPinMode(int pin)
+void notifyPinMode(int pin)
 {
     OutputMessage tx_msg(2001);
     tx_msg.putByte(pin);
-    tx_msg.putByte(pin_mode[pin]);
+    tx_msg.putByte(pin_state[pin].mode);
     DH.write(tx_msg);
 }
 
 
-void sendPinRead(int pin)
+void notifyPinRead(int pin)
 {
     int val = 0;
-    switch (pin_mode[pin])
+    switch (pin_state[pin].mode)
     {
         case MODE_DIGITAL_INPUT:
         case MODE_DIGITAL_INPUT_PULLUP:
@@ -66,6 +75,8 @@ void sendPinRead(int pin)
             break;
 
         default:
+            // don't send notifications
+            // for unsupported pin modes
             return;
     }
 
@@ -76,17 +87,182 @@ void sendPinRead(int pin)
 }
 
 
+void notifyPinWrite(int pin, int val)
+{
+    OutputMessage tx_msg(2004);
+    tx_msg.putByte(pin);
+    tx_msg.putShort(val);
+    DH.write(tx_msg);
+}
+
+
+void notifyReset()
+{
+    OutputMessage tx_msg(2010);
+    DH.write(tx_msg);
+}
+
+
+// send pin mode notifications
+void handleGetPinMode(InputMessageEx &msg)
+{
+    const long cmd_id = msg.getUInt32();
+    const int count = msg.getUInt16();
+
+    if (0 < count)
+    {
+        // notify requested pins
+        for (int i = 0; i < count; ++i)
+        {
+            const int pin = msg.getUInt8();
+            if (0 <= pin && pin < N_PINS)
+                notifyPinMode(pin);
+        }
+    }
+    else
+    {
+        // notify all pins
+        for (int i = 0; i < N_PINS; ++i)
+            notifyPinMode(i);
+    }
+
+    DH.writeCommandResult(cmd_id,
+        CMD_STATUS_SUCCESS,
+        CMD_RESULT_OK);
+}
+
+
+// set a pin mode
+void handleSetPinMode(InputMessageEx &msg)
+{
+    const long cmd_id = msg.getUInt32();
+    const int pin = msg.getUInt8();
+    const int mode = msg.getUInt8();
+
+    if (!(0 <= pin && pin < N_PINS))
+    {
+        DH.writeCommandResult(cmd_id,
+            CMD_STATUS_FAILED,
+            "Invalid pin");
+        return;
+    }
+
+    switch (mode)
+    {
+        case MODE_DIGITAL_OUTPUT:
+        case MODE_ANALOG_OUTPUT:
+            pinMode(pin, OUTPUT);
+            break;
+
+        case MODE_DIGITAL_INPUT:
+        case MODE_ANALOG_INPUT:
+            pinMode(pin, INPUT);
+            break;
+
+        case MODE_DIGITAL_INPUT_PULLUP:
+        case MODE_ANALOG_INPUT_PULLUP:
+            pinMode(pin, INPUT_PULLUP);
+            break;
+
+        default:
+            DH.writeCommandResult(cmd_id,
+                CMD_STATUS_FAILED,
+                "Invalid mode");
+            return;
+    }
+
+    pin_state[pin].mode = mode;
+    DH.writeCommandResult(cmd_id,
+        CMD_STATUS_SUCCESS,
+        CMD_RESULT_OK);
+    notifyPinMode(pin);
+}
+
+
+// send pin read value notification
+void handlePinRead(InputMessageEx &msg)
+{
+    const long cmd_id = msg.getUInt32();
+    const int count = msg.getUInt16();
+
+    if (0 < count)
+    {
+        // notify requestd pins
+        for (int i = 0; i < count; ++i)
+        {
+            const int pin = msg.getUInt8();
+            if (0 <= pin && pin < N_PINS)
+                notifyPinRead(pin);
+        }
+    }
+    else
+    {
+        // notify all pins
+        for (int i = 0; i < N_PINS; ++i)
+            notifyPinRead(i);
+    }
+
+    DH.writeCommandResult(cmd_id,
+        CMD_STATUS_SUCCESS,
+        CMD_RESULT_OK);
+}
+
+
+// write to a pin
+void handlePinWrite(InputMessageEx &msg)
+{
+    const long cmd_id = msg.getUInt32();
+    const int pin = msg.getUInt8();
+    const int val = msg.getUInt16();
+
+    if (!(0 <= pin && pin < N_PINS))
+    {
+        DH.writeCommandResult(cmd_id,
+            CMD_STATUS_FAILED,
+            "Invalid pin");
+        return;
+    }
+
+    switch (pin_state[pin].mode)
+    {
+        case MODE_DIGITAL_OUTPUT:
+            digitalWrite(pin, val);
+            break;
+
+        case MODE_ANALOG_OUTPUT:
+            analogWrite(pin, val);
+            break;
+
+        default:
+            DH.writeCommandResult(cmd_id,
+                CMD_STATUS_FAILED,
+                "Invalid mode");
+            return;
+    }
+
+    DH.writeCommandResult(cmd_id,
+        CMD_STATUS_SUCCESS,
+        CMD_RESULT_OK);
+    notifyPinWrite(pin, val);
+}
+
+
 /**
  * Initializes the Arduino firmware.
  */
 void setup(void)
 {
     for (int i = 0; i < N_PINS; ++i)
-        pin_mode[i] = MODE_DIGITAL_OUTPUT;
+    {
+        pin_state[i].mode = MODE_DIGITAL_OUTPUT;
+        pinMode(i, OUTPUT);
+        //pin_state[i].
+    }
     Serial.begin(115200);
 
     DH.begin(Serial);
     DH.writeRegistrationResponse(REG_DATA);
+    notifyReset();
 }
 
 
@@ -103,97 +279,21 @@ void loop(void)
                 DH.writeRegistrationResponse(REG_DATA);
                 break;
 
-
             case 1001:   // "getPinMode" - send pin mode notifications
-            {
-                const long cmd_id = rx_msg.getUInt32();
-                const int count = rx_msg.getUInt16();
-
-                if (0 < count)
-                {
-                    for (int i = 0; i < count; ++i)
-                    {
-                        const int pin = rx_msg.getUInt8();
-                        if (0 <= pin && pin < N_PINS)
-                            sendPinMode(pin);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < N_PINS; ++i)
-                        sendPinMode(i);
-                }
-
-                DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-            } break;
-
+                handleGetPinMode(rx_msg);
+                break;
 
             case 1002:   // "setPinMode" - set a pin mode
-            {
-                const long cmd_id = rx_msg.getUInt32();
-                const int pin = rx_msg.getUInt8();
-                const int mode = rx_msg.getUInt8();
-
-                if (0 <= pin && pin < N_PINS)
-                {
-                    pin_mode[pin] = mode;
-                    sendPinMode(pin);
-
-                    DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-                }
-                else
-                    DH.writeCommandResult(cmd_id, CMD_STATUS_FAILED, "Invalid pin");
-            } break;
-
+                handleSetPinMode(rx_msg);
+                break;
 
             case 1003:   // "pinRead" - send pin read value notification
-            {
-                const long cmd_id = rx_msg.getUInt32();
-                const int count = rx_msg.getUInt16();
-
-                if (0 < count)
-                {
-                    for (int i = 0; i < count; ++i)
-                    {
-                        const int pin = rx_msg.getUInt8();
-                        if (0 <= pin && pin < N_PINS)
-                            sendPinRead(pin);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < N_PINS; ++i)
-                        sendPinRead(i);
-                }
-
-                DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-            } break;
-
+                handlePinRead(rx_msg);
+                break;
 
             case 1004:   // "pinWrite" - write to a pin
-            {
-                const long cmd_id = rx_msg.getUInt32();
-                const int pin = rx_msg.getUInt8();
-                const int val = rx_msg.getUInt16();
-
-                if (0 <= pin && pin < N_PINS)
-                {
-                    switch (pin_mode[pin])
-                    {
-                        case MODE_DIGITAL_OUTPUT:
-                            digitalWrite(pin, val);
-                            break;
-
-                        case MODE_ANALOG_OUTPUT:
-                            analogWrite(pin, val);
-                            break;
-                    }
-
-                    DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
-                }
-                else
-                    DH.writeCommandResult(cmd_id, CMD_STATUS_FAILED, "Invalid pin");
-            } break;
+                handlePinWrite(rx_msg);
+                break;
         }
 
         rx_msg.reset(); // reset for the next message parsing
