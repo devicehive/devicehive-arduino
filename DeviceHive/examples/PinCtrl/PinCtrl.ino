@@ -43,7 +43,7 @@ enum PinMode
 struct PinState
 {
     uint8_t mode;
-    //uint16_t last_read;
+    int old_val;
     //unsigned int auto_read;
 };
 
@@ -55,6 +55,15 @@ void notifyPinMode(int pin)
     OutputMessage tx_msg(2001);
     tx_msg.putByte(pin);
     tx_msg.putByte(pin_state[pin].mode);
+    DH.write(tx_msg);
+}
+
+
+void notifyPinRead(int pin, int val)
+{
+    OutputMessage tx_msg(2003);
+    tx_msg.putByte(pin);
+    tx_msg.putShort(val);
     DH.write(tx_msg);
 }
 
@@ -80,10 +89,7 @@ void notifyPinRead(int pin)
             return;
     }
 
-    OutputMessage tx_msg(2003);
-    tx_msg.putByte(pin);
-    tx_msg.putShort(val);
-    DH.write(tx_msg);
+    notifyPinRead(pin, val);
 }
 
 
@@ -122,8 +128,8 @@ void handleGetPinMode(InputMessageEx &msg)
     else
     {
         // notify all pins
-        for (int i = 0; i < N_PINS; ++i)
-            notifyPinMode(i);
+        for (int pin = 0; pin < N_PINS; ++pin)
+            notifyPinMode(pin);
     }
 
     DH.writeCommandResult(cmd_id,
@@ -155,12 +161,22 @@ void handleSetPinMode(InputMessageEx &msg)
             break;
 
         case MODE_DIGITAL_INPUT:
+            pin_state[pin].old_val = digitalRead(pin);
+            pinMode(pin, INPUT);
+            break;
+
         case MODE_ANALOG_INPUT:
+            pin_state[pin].old_val = analogRead(pin);
             pinMode(pin, INPUT);
             break;
 
         case MODE_DIGITAL_INPUT_PULLUP:
+            pin_state[pin].old_val = digitalRead(pin);
+            pinMode(pin, INPUT_PULLUP);
+            break;
+
         case MODE_ANALOG_INPUT_PULLUP:
+            pin_state[pin].old_val = analogRead(pin);
             pinMode(pin, INPUT_PULLUP);
             break;
 
@@ -198,8 +214,8 @@ void handlePinRead(InputMessageEx &msg)
     else
     {
         // notify all pins
-        for (int i = 0; i < N_PINS; ++i)
-            notifyPinRead(i);
+        for (int pin = 0; pin < N_PINS; ++pin)
+            notifyPinRead(pin);
     }
 
     DH.writeCommandResult(cmd_id,
@@ -247,16 +263,49 @@ void handlePinWrite(InputMessageEx &msg)
 }
 
 
+// notify digital input pins if changed
+void notifyInputPins()
+{
+    for (int pin = 0; pin < N_PINS; ++pin)
+        switch (pin_state[pin].mode)
+        {
+            case MODE_DIGITAL_INPUT:
+            case MODE_DIGITAL_INPUT_PULLUP:
+            {
+                const int val = digitalRead(pin);
+                if (val != pin_state[pin].old_val)
+                {
+                    pin_state[pin].old_val = val;
+                    notifyPinRead(pin, val);
+                }
+            } break;
+
+            // TODO: use timeout or value hysteresis
+            case MODE_ANALOG_INPUT:
+            case MODE_ANALOG_INPUT_PULLUP:
+            {
+                const int val = analogRead(pin);
+                if (val != pin_state[pin].old_val)
+                {
+                    pin_state[pin].old_val = val;
+                    notifyPinRead(pin, val);
+                }
+            } break;
+        }
+}
+
+
 /**
  * Initializes the Arduino firmware.
  */
 void setup(void)
 {
-    for (int i = 0; i < N_PINS; ++i)
+    for (int pin = 0; pin < N_PINS; ++pin)
     {
-        pin_state[i].mode = MODE_DIGITAL_OUTPUT;
-        pinMode(i, OUTPUT);
-        //pin_state[i].
+        pin_state[pin].mode = MODE_DIGITAL_OUTPUT;
+        pinMode(pin, OUTPUT);
+
+        pin_state[pin].old_val = 0;
     }
     Serial.begin(115200);
 
@@ -271,6 +320,9 @@ void setup(void)
  */
 void loop(void)
 {
+    notifyInputPins();
+
+    // process input commands
     if (DH.read(rx_msg) == DH_PARSE_OK)
     {
         switch (rx_msg.intent)
