@@ -37,7 +37,7 @@ enum PinMode
     MODE_ANALOG_INPUT           = 22,
     MODE_ANALOG_INPUT_PULLUP    = 23,
 
-    N_PINS = 14
+    N_PINS = NUM_DIGITAL_PINS
 };
 
 struct PinState
@@ -50,6 +50,8 @@ struct PinState
 PinState pin_state[N_PINS];
 InputMessage rx_msg; // received message
 
+
+// send 'pinMode' notification
 void notifyPinMode(int pin)
 {
     OutputMessage tx_msg(2001);
@@ -59,6 +61,7 @@ void notifyPinMode(int pin)
 }
 
 
+// send 'pinRead' notification
 void notifyPinRead(int pin, int val)
 {
     OutputMessage tx_msg(2003);
@@ -67,32 +70,32 @@ void notifyPinRead(int pin, int val)
     DH.write(tx_msg);
 }
 
-
+// read value and send 'pinRead' notification
 void notifyPinRead(int pin)
 {
-    int val = 0;
     switch (pin_state[pin].mode)
     {
         case MODE_DIGITAL_INPUT:
         case MODE_DIGITAL_INPUT_PULLUP:
-            val = digitalRead(pin);
+            notifyPinRead(pin,
+                digitalRead(pin));
             break;
 
         case MODE_ANALOG_INPUT:
         case MODE_ANALOG_INPUT_PULLUP:
-            val = analogRead(pin);
+            notifyPinRead(pin,
+                analogRead(pin));
             break;
 
         default:
             // don't send notifications
             // for unsupported pin modes
-            return;
+            break;
     }
-
-    notifyPinRead(pin, val);
 }
 
 
+// send 'pinWrite' notification
 void notifyPinWrite(int pin, int val)
 {
     OutputMessage tx_msg(2004);
@@ -102,25 +105,27 @@ void notifyPinWrite(int pin, int val)
 }
 
 
+// send 'reset' notification
 void notifyReset()
 {
     OutputMessage tx_msg(2010);
+    // no payload
     DH.write(tx_msg);
 }
 
 
-// send pin mode notifications
-void handleGetPinMode(InputMessageEx &msg)
+// handle 'getPinMode' command - send 'pinMode' notifications back
+void handleGetPinMode()
 {
-    const long cmd_id = msg.getUInt32();
-    const int count = msg.getUInt16();
+    const long cmd_id = rx_msg.getUInt32();
+    const int count = rx_msg.getUInt16();
 
     if (0 < count)
     {
         // notify requested pins
         for (int i = 0; i < count; ++i)
         {
-            const int pin = msg.getUInt8();
+            const int pin = rx_msg.getUInt8();
             if (0 <= pin && pin < N_PINS)
                 notifyPinMode(pin);
         }
@@ -138,12 +143,12 @@ void handleGetPinMode(InputMessageEx &msg)
 }
 
 
-// set a pin mode
-void handleSetPinMode(InputMessageEx &msg)
+// handle 'setPinMode' command - set 'pinMode' notification back
+void handleSetPinMode()
 {
-    const long cmd_id = msg.getUInt32();
-    const int pin = msg.getUInt8();
-    const int mode = msg.getUInt8();
+    const long cmd_id = rx_msg.getUInt32();
+    const int pin = rx_msg.getUInt8();
+    const int mode = rx_msg.getUInt8();
 
     if (!(0 <= pin && pin < N_PINS))
     {
@@ -192,21 +197,22 @@ void handleSetPinMode(InputMessageEx &msg)
         CMD_STATUS_SUCCESS,
         CMD_RESULT_OK);
     notifyPinMode(pin);
+    notifyPinRead(pin);
 }
 
 
-// send pin read value notification
-void handlePinRead(InputMessageEx &msg)
+// handle 'pinRead' command - send 'pinRead' notifications back
+void handlePinRead()
 {
-    const long cmd_id = msg.getUInt32();
-    const int count = msg.getUInt16();
+    const long cmd_id = rx_msg.getUInt32();
+    const int count = rx_msg.getUInt16();
 
     if (0 < count)
     {
-        // notify requestd pins
+        // notify requested pins
         for (int i = 0; i < count; ++i)
         {
-            const int pin = msg.getUInt8();
+            const int pin = rx_msg.getUInt8();
             if (0 <= pin && pin < N_PINS)
                 notifyPinRead(pin);
         }
@@ -224,12 +230,12 @@ void handlePinRead(InputMessageEx &msg)
 }
 
 
-// write to a pin
-void handlePinWrite(InputMessageEx &msg)
+// handle 'pinWrite' command - send 'pinWrite' notification back
+void handlePinWrite()
 {
-    const long cmd_id = msg.getUInt32();
-    const int pin = msg.getUInt8();
-    const int val = msg.getUInt16();
+    const long cmd_id = rx_msg.getUInt32();
+    const int pin = rx_msg.getUInt8();
+    const int val = rx_msg.getUInt16();
 
     if (!(0 <= pin && pin < N_PINS))
     {
@@ -263,7 +269,7 @@ void handlePinWrite(InputMessageEx &msg)
 }
 
 
-// notify digital input pins if changed
+// send 'pinRead' notification for digital input pins (if changed)
 void notifyInputPins()
 {
     for (int pin = 0; pin < N_PINS; ++pin)
@@ -307,9 +313,10 @@ void setup(void)
 
         pin_state[pin].old_val = 0;
     }
-    Serial.begin(115200);
 
+    Serial.begin(115200);
     DH.begin(Serial);
+
     DH.writeRegistrationResponse(REG_DATA);
     notifyReset();
 }
@@ -331,21 +338,10 @@ void loop(void)
                 DH.writeRegistrationResponse(REG_DATA);
                 break;
 
-            case 1001:   // "getPinMode" - send pin mode notifications
-                handleGetPinMode(rx_msg);
-                break;
-
-            case 1002:   // "setPinMode" - set a pin mode
-                handleSetPinMode(rx_msg);
-                break;
-
-            case 1003:   // "pinRead" - send pin read value notification
-                handlePinRead(rx_msg);
-                break;
-
-            case 1004:   // "pinWrite" - write to a pin
-                handlePinWrite(rx_msg);
-                break;
+            case 1001: handleGetPinMode(); break;
+            case 1002: handleSetPinMode(); break;
+            case 1003: handlePinRead();    break;
+            case 1004: handlePinWrite();   break;
         }
 
         rx_msg.reset(); // reset for the next message parsing

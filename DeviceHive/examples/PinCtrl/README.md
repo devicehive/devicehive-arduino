@@ -12,24 +12,26 @@ and get values for input pins.
 [Arduino] board should be connected to the Internet via [Raspberry Pi]
 which acts as a gateway. See other examples for connection details.
 
+`PinCtrl` example supports simple commands and notifications.
+
 
 Commands
 --------
 
-[Arduino] board flashed with this example supports the following commands:
-  - `getPinMode` - gets one or several pin modes
+The following commands are supported:
+  - `getPinMode` - gets a pin mode
   - `setPinMode` - sets a pin mode
-  - `pinRead` - forces device to send pin value
-  - `pinWrite` - writes pin value
+  - `pinRead` - gets an input pin value
+  - `pinWrite` - sets an output pin value
 
 
 ### Get pin mode
 
-This command expected an array of pin numbers as parameters. For each
-requested pin the `pinMode` notification will be send back. If the pin
-numbers array is empty then *all* pins will be reported back.
+This command forces to send `pinMode` notifications for requested pins.
+Requisted pins are specified as array of integers in command parameters.
+If the pin array is empty then *all* pins will be reported back.
 
-A client application (usually HTML5) should get current pin modes at startup.
+A client application (usually HTML5) should get all pin modes at startup:
 
 ~~~{.js}
 {
@@ -41,8 +43,11 @@ A client application (usually HTML5) should get current pin modes at startup.
 
 ### Set pin mode
 
-This command sets a pin properties. The `pinMode` notification will be send back.
-A pin mode is defined by the integer number:
+This command sets a pin properties. Requested pin and mode are specified
+as command parameters. The `pinMode` notification will be sent back.
+For input pins the 'pinRead' notification also will be sent.
+
+A pin mode is defined by an integer value:
   - `11` - digital output
   - `12` - digital input
   - `13` - digital input with pull-up resistor
@@ -50,7 +55,8 @@ A pin mode is defined by the integer number:
   - `22` - analog input
   - `23` - analog input with pull-up resistor
 
-For example, to set pin `2` to the output, client application should send the following command:
+To set pin `2` as a digital output, client application
+should send the following command:
 
 ~~~{.js}
 {
@@ -65,24 +71,25 @@ For example, to set pin `2` to the output, client application should send the fo
 
 ### Read pin value
 
-This command expected an array of pin numbers as parameters. For each
-requested pin the `pinRead` notification will be send back. If the pin
-numbers array is empty then *all* pins will be reported back.
+This command forces to send `pinRead` notifications for requested pins.
+Requested pins are specified as array of integers in command parameters.
+If the pin array is empty then *all* pins will be reported back.
 
 ~~~{.js}
 {
   command: "pinRead",
-  parameters: []
+  parameters: [3,4,5]
 }
 ~~~
 
 
 ### Write pin value
 
-This command sets an output pin value. The `pinWrite` notification will be send back.
-Does nothing if pin mode isn't output.
+This command sets an output pin value. The `pinWrite` notification will
+be sent back. Does nothing if pin mode isn't an output.
 
-For example, to write *HIGH* to the pin `2`, client application should send the following command:
+For example, to write *HIGH* to the pin `2`, client application
+should send the following command:
 
 ~~~{.js}
 {
@@ -94,23 +101,24 @@ For example, to write *HIGH* to the pin `2`, client application should send the 
 }
 ~~~
 
-It's also possible to set values for PWM pins (ranged from 0 to 255).
+It's also possible to set values for PWM (analog output) pins ranged from 0 to 255.
 
 
 Notifications
 -------------
 
 The following notifications are supported:
-  - `pinMode` - reports current pin mode
-  - `pinRead` - reports input pin value
-  - `pinWrite` - reports output pin value
+  - `pinMode` - reports a pin mode
+  - `pinRead` - reports an input pin value
+  - `pinWrite` - reports an output pin value
   - `reset` - reports board reset
 
 
 ### Pin mode
 
-Pin mode notification is reported when a pin mode's changed.
-It reports pin number and the pin mode (see `setPinMode` command).
+Pin mode notification is sent when a pin mode's changed.
+It reports pin number and the pin mode (see `setPinMode` command)
+in notification parameters.
 
 ~~~{.js}
 {
@@ -125,8 +133,9 @@ It reports pin number and the pin mode (see `setPinMode` command).
 
 ### Read pin value
 
-This notification is sent for input pins when valus's changed or when
-pin value's explicitly requested with `readPin` command.
+This notification is sent for an input pin when valus's changed or when
+pin value's explicitly requested with `readPin` command. It reports pin
+number and the input value in notification parameters.
 
 ~~~{.js}
 {
@@ -141,15 +150,16 @@ pin value's explicitly requested with `readPin` command.
 
 ### Write pin value
 
-This notification is sent for output pins when value's changed with
-`writePin` command.
+This notification is sent for an output pin when value's changed with
+`writePin` command. It reports pin number and the input value
+in notification parameters.
 
 ~~~{.js}
 {
   command: "pinWrite",
   parameters: {
     pin: 2,
-    value: 1
+    value: 0
   }
 }
 ~~~
