@@ -65,7 +65,6 @@ Each device should send a registration data at startup (or reset) and as
 a response to registration request message. We use JSON format:
 
 ~~~{.cpp}
-// LedCube device registration data
 const char *REG_DATA = "{"
     "id:'b125698d-61bd-40d7-b65e-e1f86852a166',"
     "key:'LED_cube',"
@@ -131,7 +130,7 @@ and "pixels". Let's look at these commands in more detail.
 #### "fill" command
 
 The message intent for this command is 1001. A `Color` structure (RGB components)
-is used as parameter for this command.
+is used as parameter for this command followed with a `Point` structure.
 
 ~~~{.cpp}
 struct Color
@@ -140,9 +139,16 @@ struct Color
     uint8_t G;
     uint8_t B;
 };
+
+struct Point
+{
+    uint8_t X;
+    uint8_t Y;
+    uint8_t Z;
+};
 ~~~
 
-Registration data for this command is `{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8}}`.
+Registration data for this command is `{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8,DX:u8,DY:u8,DZ:u8}}`.
 A corresponding DeviceHive command (defined by the REST protocol) which looks like
 
 ~~~{.js}
@@ -150,9 +156,8 @@ A corresponding DeviceHive command (defined by the REST protocol) which looks li
   id: 12345,
   command: "fill",
   parameters: {
-    R: 11,
-    G: 22,
-    B: 33
+    R: 11, G: 22, B: 33,
+    DX: 4, DY: 4, DZ: 4
   }
 }
 ~~~
@@ -162,11 +167,12 @@ shows example of processing "fill" command in binary format:
 
 ~~~{.cpp}
 const uint32_t cmd_id = rx_msg.getUInt32();
-Color color; rx_msg.get(&color, sizeof(color));
+const Color color = rx_msg.get<Color>();
+const Point size = rx_msg.get<Point>();
 
-for (int x = 0; x < NX; ++x)
-    for (int y = 0; y < NY; ++y)
-        for (int z = 0; z < NZ; ++z)
+for (int x = 0; x < size.x; ++x)
+    for (int y = 0; y < size.y; ++y)
+        for (int z = 0; z < size.z; ++z)
 {
     Rb.setPixelZXY(z, x, y,
         color.R, color.G, color.B);
@@ -177,11 +183,14 @@ DH.writeCommandResult(cmd_id, CMD_STATUS_SUCCESS, CMD_RESULT_OK);
 
 First of all we read command identifier which will be used to report result
 back to DeviceHive server. Then we read RGB components of color provided and
-it's all we need to process this command.
+figure dimension. It's all we need to process this command.
 
 Now we are able to apply received color for each LED in the LedCube device.
 Once the job's done we send "OK" result back to gateway, and gateway will
 send it to the DeviceHive server.
+
+Note, if `DX`, `DY`, `DZ` parts of figure dimension are omitted or equal
+to zeros, then the whole cube will be filled.
 
 
 #### "cube" command
@@ -218,7 +227,7 @@ if (count == NX*NY*NZ)
         for (int y = 0; y < NY; ++y)
             for (int z = 0; z < NZ; ++z)
     {
-        Color color; rx_msg.get(&color, sizeof(color));
+        const Color color = rx_msg.get<Color>();
         Rb.setPixelZXY(z, x, y,
             color.R, color.G, color.B);
     }
@@ -249,13 +258,6 @@ The message intent for this command is 1003. An array of `Pixel` structures
 is used as parameter for this command.
 
 ~~~{.cpp}
-struct Point
-{
-    uint8_t X;
-    uint8_t Y;
-    uint8_t Z;
-};
-
 struct Pixel
 {
     Point point;
@@ -284,8 +286,7 @@ const uint32_t cmd_id = rx_msg.getUInt32();
 const uint16_t count = rx_msg.getUInt16();
 for (uint16_t i = 0; i < count; ++i)
 {
-    Pixel px; rx_msg.get(&px, sizeof(px));
-
+    const Pixel px = rx_msg.get<Pixel>();
     Rb.setPixelZXY(px.point.Z, px.point.X, px.point.Y,
                    px.color.R, px.color.G, px.color.B);
 }
