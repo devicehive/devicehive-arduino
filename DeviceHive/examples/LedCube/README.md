@@ -46,7 +46,7 @@ communicate with the [Raspebrry Pi] gateway. We support the following commands:
 To build firmware you have to provide two additional dependencies:
 
 - [Rainbowduino library](http://www.seeedstudio.com/wiki/images/4/43/Rainbowduino_for_Arduino1.0.zip)
-- [DeviceHive Arduino library](https://github.com/Pilatuz/devicehive-arduino/archive/1.0.zip)
+- [DeviceHive Arduino library](https://github.com/devicehive/devicehive-arduino/archive/1.0.zip)
 
 Please unpack these dependencies into the Arduino's `libraries` path.
 Now you can build LedCube example and flash the [Rainbowduino] board.

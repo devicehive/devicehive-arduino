@@ -9,7 +9,7 @@ Installation
 ------------
 
 Installation of DeviceHive Arduino library is quite simple. Just download
-library archive [here](https://github.com/Pilatuz/devicehive-arduino/archive/1.0.zip)
+library archive [here](https://github.com/devicehive/devicehive-arduino/archive/1.0.zip)
 and unpack `DeviceHive` subfolder to the `libraries` folder of your Arduino installation path.
 More details could be found at corresponding [Arduino](http://arduino.cc/en/Guide/Libraries) page.
 
