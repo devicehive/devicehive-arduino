@@ -7,7 +7,7 @@ DeviceHive and Arduino
 
 
 This is the most basic example of DeviceHive [Raspberry Pi] - [Arduino] combo.
-To set it up, you should download the Raspberry Pi [Python gateway](http://TODO_PYTHON_GATEWAY.zip)
+To set it up, you should download the Raspberry Pi [Python gateway](https://github.com/devicehive/devicehive-python/tree/master)
 upload it to Rasberry Pi and install Twisted module by running `sudo apt-get install python-twisted`
 command. After this you should run `nano basic_gateway_example.py` to edit
 and modify the parameters of gateway to point to your cloud or playground URL,
@@ -60,8 +60,13 @@ The `REG_DATA` string contains registration data which gives the device
 information to the gateway describing it's capabilities: commands it can
 handle and notifications it can send.
 
-*TODO: Describe how simple, struct and notifications are defined*. Please refer
-to [this page](http://www.devicehive.com/binary/#SystemMessages/RegisterJson)
+The registration data are written in modified JSON format - you can omit
+annoying quotes for simple strings containing alphabetical characters
+or digits. There are a few primitive types like `u16` or `u8` which refer
+to unsigned 16-bits and unsigned 8-bits integers. Arrays should be
+surrounded by square braces `[]` and structures or objects should be
+surrounded by curly braces `{}`.
+Please refer to [this page](http://www.devicehive.com/binary/#SystemMessages/RegisterJson)
 for complete syntax of registration data.
 
 IMPORTANT: For parameters we will be passing in "blink" command, you should
