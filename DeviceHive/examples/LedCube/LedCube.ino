@@ -94,9 +94,9 @@ void loop(void)
                 const Point size = rx_msg.get<Point>();
 
                 // default size (0,0,0) means the whole cube
-                const int nx = (0 < size.x && size.x < NX) ? size.x : NX;
-                const int ny = (0 < size.y && size.y < NY) ? size.y : NY;
-                const int nz = (0 < size.z && size.z < NZ) ? size.z : NZ;
+                const int nx = (0 < size.X && size.X < NX) ? size.X : NX;
+                const int ny = (0 < size.Y && size.Y < NY) ? size.Y : NY;
+                const int nz = (0 < size.Z && size.Z < NZ) ? size.Z : NZ;
 
                 for (int x = 0; x < nx; ++x)
                     for (int y = 0; y < ny; ++y)
