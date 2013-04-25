@@ -271,8 +271,6 @@ int DeviceHive::read(Message &msg)
 
     while (stream->available() > 0)
     {
-        const unsigned int b = stream->read();
-
         // check RX timeout
         if (rx_state != STATE_SIGNATURE1 && rx_timeout)
         {
@@ -283,6 +281,8 @@ int DeviceHive::read(Message &msg)
                 return DH_PARSE_TIMED_OUT;
             }
         }
+
+        const unsigned int b = stream->read();
 
         // update RX checksum register
         if (rx_state != STATE_SIGNATURE1)

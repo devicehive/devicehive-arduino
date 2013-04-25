@@ -17,7 +17,7 @@ const char *REG_DATA = "{"
         "version:'1.0'},"
     "equipment:[{code:'cube',name:'cube',type:'LED_Cube'}],"
     "commands:["
-        "{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8}},"
+        "{intent:1001,name:'fill',params:{R:u8,G:u8,B:u8,DX:u8,DY:u8,DZ:u8}},"
         "{intent:1002,name:'cube',params:[{R:u8,G:u8,B:u8}]},"
         "{intent:1003,name:'pixels',params:[{X:u8,Y:u8,Z:u8,R:u8,G:u8,B:u8}]}"
     "],"
@@ -90,11 +90,17 @@ void loop(void)
             case 1001:   // "fill" - fill the whole Cube with one color
             {
                 const uint32_t cmd_id = rx_msg.getUInt32();
-                Color color = rx_msg.get<Color>();
+                const Color color = rx_msg.get<Color>();
+                const Point size = rx_msg.get<Point>();
 
-                for (int x = 0; x < NX; ++x)
-                    for (int y = 0; y < NY; ++y)
-                        for (int z = 0; z < NZ; ++z)
+                // default size (0,0,0) means the whole cube
+                const int nx = (0 < size.X && size.X < NX) ? size.X : NX;
+                const int ny = (0 < size.Y && size.Y < NY) ? size.Y : NY;
+                const int nz = (0 < size.Z && size.Z < NZ) ? size.Z : NZ;
+
+                for (int x = 0; x < nx; ++x)
+                    for (int y = 0; y < ny; ++y)
+                        for (int z = 0; z < nz; ++z)
                 {
                     Rb.setPixelZXY(z, x, y,
                         color.R, color.G, color.B);
@@ -115,7 +121,7 @@ void loop(void)
                         for (int y = 0; y < NY; ++y)
                             for (int z = 0; z < NZ; ++z)
                     {
-                        Color color = rx_msg.get<Color>();
+                        const Color color = rx_msg.get<Color>();
                         Rb.setPixelZXY(z, x, y,
                             color.R, color.G, color.B);
                     }
@@ -135,7 +141,7 @@ void loop(void)
                 const uint16_t count = rx_msg.getUInt16();
                 for (uint16_t i = 0; i < count; ++i)
                 {
-                    Pixel px = rx_msg.get<Pixel>();
+                    const Pixel px = rx_msg.get<Pixel>(); // TODO: check point range!
                     Rb.setPixelZXY(px.point.Z, px.point.X, px.point.Y,
                                    px.color.R, px.color.G, px.color.B);
                 }
